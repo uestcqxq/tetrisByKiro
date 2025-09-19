@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}俄罗斯方块游戏{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- 加载屏幕 -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <h2>俄罗斯方块</h2>
+            <div class="loading-spinner"></div>
+            <div id="loading-text" class="loading-text">初始化游戏...</div>
+            <div class="loading-bar">
+                <div id="loading-progress" class="loading-progress"></div>
+            </div>
+            <div class="loading-details">
+                <div id="loading-stage">检测设备性能...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>俄罗斯方块游戏</h1>
+            <div id="user-info">加载中...</div>
+        </header>
+        
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+        
+        <footer>
+            <p>&copy; 2024 俄罗斯方块游戏</p>
+        </footer>
+    </div>
+    
+    <!-- 性能优化模块 -->
+    <script src="{{ url_for('static', filename='js/performance-optimizer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/resource-manager.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/device-detector.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/performance-dashboard.js') }}"></script>
+    
+    <!-- 错误处理和离线支持 -->
+    <script src="{{ url_for('static', filename='js/error-handler.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/offline-storage.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/network-manager.js') }}"></script>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

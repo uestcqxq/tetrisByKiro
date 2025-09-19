@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div id="game-container">
+    <!-- 主游戏区域 -->
+    <div class="game-area">
+        <div class="canvas-container">
+            <canvas id="game-canvas" width="300" height="600"></canvas>
+            <div id="game-overlay" class="game-overlay hidden">
+                <div class="overlay-content">
+                    <h2 id="overlay-title">游戏暂停</h2>
+                    <p id="overlay-message">按空格键继续游戏</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 游戏控制按钮 -->
+        <div class="game-controls">
+            <button id="start-btn" class="btn btn-primary">开始游戏</button>
+            <button id="pause-btn" class="btn btn-secondary" disabled>暂停</button>
+            <button id="reset-btn" class="btn btn-danger">重新开始</button>
+        </div>
+        
+        <!-- 移动设备触摸控制 -->
+        <div class="mobile-controls">
+            <div class="control-row">
+                <button id="rotate-btn" class="control-btn">↻</button>
+            </div>
+            <div class="control-row">
+                <button id="left-btn" class="control-btn">←</button>
+                <button id="down-btn" class="control-btn">↓</button>
+                <button id="right-btn" class="control-btn">→</button>
+            </div>
+            <div class="control-row">
+                <button id="drop-btn" class="control-btn">⬇</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 游戏信息面板 -->
+    <div class="info-panel">
+        <h3>游戏信息</h3>
+        <div class="game-stats">
+            <div class="stat-item">
+                <label>得分</label>
+                <span id="score" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <label>级别</label>
+                <span id="level" class="stat-value">1</span>
+            </div>
+            <div class="stat-item">
+                <label>行数</label>
+                <span id="lines" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <label>时间</label>
+                <span id="time" class="stat-value">00:00</span>
+            </div>
+        </div>
+        
+        <div class="next-piece">
+            <h4>下一个方块</h4>
+            <canvas id="next-canvas" width="120" height="120"></canvas>
+        </div>
+        
+        <div class="progress-bar">
+            <label>升级进度</label>
+            <div class="progress">
+                <div id="level-progress" class="progress-fill"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 排行榜面板 -->
+    <div class="info-panel">
+        <h3>排行榜</h3>
+        <div id="leaderboard" class="leaderboard">
+            <div class="loading">加载中...</div>
+        </div>
+        
+        <div class="user-rank">
+            <h4>我的排名</h4>
+            <div id="user-rank" class="rank-display">
+                <span class="rank-number">-</span>
+                <span class="rank-text">暂无记录</span>
+            </div>
+        </div>
+        
+        <div class="connection-status">
+            <span id="connection-indicator" class="status-indicator online"></span>
+            <span id="connection-text">已连接</span>
+        </div>
+    </div>
+</div>
+
+<!-- 游戏说明 -->
+<div class="game-instructions">
+    <h3>游戏说明</h3>
+    <div class="instructions-content">
+        <div class="instruction-section">
+            <h4>键盘控制</h4>
+            <ul>
+                <li><kbd>←</kbd> <kbd>→</kbd> 左右移动方块</li>
+                <li><kbd>↑</kbd> 旋转方块</li>
+                <li><kbd>↓</kbd> 加速下落</li>
+                <li><kbd>空格</kbd> 瞬间下落</li>
+                <li><kbd>P</kbd> 暂停/继续游戏</li>
+            </ul>
+        </div>
+        
+        <div class="instruction-section">
+            <h4>游戏规则</h4>
+            <ul>
+                <li>消除完整的行来获得分数</li>
+                <li>同时消除多行可获得额外奖励</li>
+                <li>随着级别提升，方块下落速度加快</li>
+                <li>方块堆积到顶部时游戏结束</li>
+            </ul>
+        </div>
+        
+        <div class="instruction-section">
+            <h4>积分系统</h4>
+            <ul>
+                <li>单行消除: 100 × 级别</li>
+                <li>双行消除: 300 × 级别</li>
+                <li>三行消除: 500 × 级别</li>
+                <li>四行消除: 800 × 级别</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Socket.IO -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+<!-- 游戏脚本 -->
+<script src="{{ url_for('static', filename='js/api-client.js') }}"></script>
+<script src="{{ url_for('static', filename='js/websocket-client.js') }}"></script>
+<script src="{{ url_for('static', filename='js/tetromino-manager.js') }}"></script>
+<script src="{{ url_for('static', filename='js/board-manager.js') }}"></script>
+<script src="{{ url_for('static', filename='js/difficulty-manager.js') }}"></script>
+<script src="{{ url_for('static', filename='js/scoring-system.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ui-manager.js') }}"></script>
+<script src="{{ url_for('static', filename='js/mobile-touch-handler.js') }}"></script>
+<script src="{{ url_for('static', filename='js/input-controller.js') }}"></script>
+<script src="{{ url_for('static', filename='js/tetris-game.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<script>
+// 页面特定的JavaScript代码
+console.log('游戏页面加载完成');
+
+// 添加键盘控制提示
+document.addEventListener('DOMContentLoaded', function() {
+    // 显示键盘控制提示
+    showControlHints();
+    
+    // 检测移动设备并显示相应提示
+    detectDeviceAndShowHints();
+});
+
+function showControlHints() {
+    console.log('键盘控制:');
+    console.log('← → 移动方块');
+    console.log('↑ 旋转方块');
+    console.log('↓ 加速下落');
+    console.log('空格 瞬间下落');
+    console.log('P 暂停游戏');
+}
+
+function detectDeviceAndShowHints() {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        console.log('移动设备检测到，触摸控制已启用:');
+        console.log('- 左右滑动: 移动方块');
+        console.log('- 向上滑动: 旋转方块');
+        console.log('- 向下滑动: 瞬间下落');
+        console.log('- 点击左侧: 向左移动');
+        console.log('- 点击右侧: 向右移动');
+        console.log('- 点击中间: 旋转方块');
+        console.log('- 长按: 暂停游戏');
+    }
+}
+</script>
+{% endblock %}

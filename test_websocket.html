@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status-panel {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        .warning {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .online { background: #4CAF50; }
+        .offline { background: #f44336; }
+        .connecting { background: #ff9800; }
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .timestamp {
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket实时功能测试</h1>
+    
+    <div class="status-panel">
+        <h3>连接状态</h3>
+        <p>
+            <span id="connection-status" class="status-indicator offline"></span>
+            <span id="connection-text">未连接</span>
+        </p>
+        <p>重连次数: <span id="reconnect-count">0</span></p>
+        <p>延迟: <span id="latency">-</span>ms</p>
+        <p>在线用户: <span id="online-users">-</span></p>
+    </div>
+    
+    <div class="test-section">
+        <h2>连接控制</h2>
+        <button id="connect-btn" onclick="connectWebSocket()">连接</button>
+        <button id="disconnect-btn" onclick="disconnectWebSocket()" disabled>断开连接</button>
+        <button onclick="getConnectionState()">获取连接状态</button>
+        <div id="connection-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>用户功能测试</h2>
+        <button onclick="testUserLogin()">用户登录</button>
+        <button onclick="testGameStarted()">游戏开始</button>
+        <button onclick="testGameFinished()">游戏结束</button>
+        <div id="user-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>排行榜功能测试</h2>
+        <button onclick="testRequestLeaderboard()">请求排行榜</button>
+        <button onclick="testSubscribeLeaderboard()">订阅排行榜更新</button>
+        <button onclick="testUnsubscribeLeaderboard()">取消订阅</button>
+        <button onclick="testRequestUserRank()">请求用户排名</button>
+        <div id="leaderboard-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>统计信息测试</h2>
+        <button onclick="testGetOnlineCount()">获取在线用户数</button>
+        <button onclick="testGetLeaderboardStats()">获取排行榜统计</button>
+        <button onclick="testPing()">发送心跳</button>
+        <div id="stats-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>实时事件日志</h2>
+        <button onclick="clearEventLog()">清空日志</button>
+        <div id="event-log" class="result" style="max-height: 300px;"></div>
+    </div>
+
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="static/js/websocket-client.js"></script>
+    
+    <script>
+        let testUser = {
+            id: 'test-user-' + Date.now(),
+            username: 'TestUser' + Math.floor(Math.random() * 1000)
+        };
+        
+        let eventLogCount = 0;
+        
+        // 初始化WebSocket客户端
+        const wsClient = new WebSocketClient({
+            autoConnect: false,
+            reconnectAttempts: 3,
+            reconnectDelay: 2000,
+            heartbeatInterval: 10000
+        });
+        
+        // 设置事件监听器
+        setupEventListeners();
+        
+        function setupEventListeners() {
+            // 连接状态事件
+            wsClient.on('connected', (data) => {
+                updateConnectionStatus('online', '已连接');
+                document.getElementById('connect-btn').disabled = true;
+                document.getElementById('disconnect-btn').disabled = false;
+                logEvent('连接成功', data, 'success');
+            });
+            
+            wsClient.on('disconnected', (data) => {
+                updateConnectionStatus('offline', '已断开');
+                document.getElementById('connect-btn').disabled = false;
+                document.getElementById('disconnect-btn').disabled = true;
+                logEvent('连接断开', data, 'warning');
+            });
+            
+            wsClient.on('connectionError', (data) => {
+                updateConnectionStatus('offline', '连接错误');
+                logEvent('连接错误', data, 'error');
+            });
+            
+            wsClient.on('reconnecting', (data) => {
+                updateConnectionStatus('connecting', `重连中 (${data.attempt}/${data.maxAttempts})`);
+                document.getElementById('reconnect-count').textContent = data.attempt;
+                logEvent('重连中', data, 'warning');
+            });
+            
+            wsClient.on('reconnectFailed', (data) => {
+                updateConnectionStatus('offline', '重连失败');
+                logEvent('重连失败', data, 'error');
+            });
+            
+            // 排行榜事件
+            wsClient.on('leaderboardUpdated', (data) => {
+                logEvent('排行榜更新', data, 'success');
+            });
+            
+            wsClient.on('leaderboardData', (data) => {
+                logEvent('排行榜数据', data, 'success');
+            });
+            
+            wsClient.on('leaderboardSubscriptionChanged', (data) => {
+                logEvent('排行榜订阅状态变化', data, 'success');
+            });
+            
+            // 用户排名事件
+            wsClient.on('rankChanged', (data) => {
+                logEvent('用户排名变化', data, 'success');
+            });
+            
+            wsClient.on('userRankData', (data) => {
+                logEvent('用户排名数据', data, 'success');
+            });
+            
+            // 游戏事件
+            wsClient.on('gameSaved', (data) => {
+                logEvent('游戏得分已保存', data, 'success');
+            });
+            
+            wsClient.on('loginConfirmed', (data) => {
+                logEvent('用户登录确认', data, 'success');
+            });
+            
+            // 统计事件
+            wsClient.on('onlineUsersCount', (data) => {
+                document.getElementById('online-users').textContent = data.count;
+                logEvent('在线用户数更新', data, 'success');
+            });
+            
+            wsClient.on('leaderboardStats', (data) => {
+                logEvent('排行榜统计', data, 'success');
+            });
+            
+            // 心跳事件
+            wsClient.on('pong', (data) => {
+                document.getElementById('latency').textContent = data.latency || '-';
+                logEvent('心跳响应', { latency: data.latency }, 'success');
+            });
+            
+            // 错误事件
+            wsClient.on('serverError', (error) => {
+                logEvent('服务器错误', error, 'error');
+            });
+        }
+        
+        function updateConnectionStatus(status, text) {
+            const indicator = document.getElementById('connection-status');
+            const textElement = document.getElementById('connection-text');
+            
+            indicator.className = `status-indicator ${status}`;
+            textElement.textContent = text;
+        }
+        
+        function logEvent(eventName, data, type = 'info') {
+            const logDiv = document.getElementById('event-log');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `
+                <div class="timestamp">[${timestamp}]</div>
+                <strong>${eventName}</strong>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            eventLogCount++;
+            if (eventLogCount > 50) {
+                // 保持日志条目数量在合理范围内
+                logDiv.removeChild(logDiv.firstChild);
+                eventLogCount--;
+            }
+        }
+        
+        // 连接控制函数
+        function connectWebSocket() {
+            wsClient.connect();
+        }
+        
+        function disconnectWebSocket() {
+            wsClient.disconnect();
+        }
+        
+        function getConnectionState() {
+            const state = wsClient.getConnectionState();
+            const stats = wsClient.getConnectionStats();
+            
+            document.getElementById('connection-result').textContent = 
+                `连接状态:\n${JSON.stringify(state, null, 2)}\n\n统计信息:\n${JSON.stringify(stats, null, 2)}`;
+            document.getElementById('connection-result').className = 'result success';
+        }
+        
+        // 用户功能测试
+        function testUserLogin() {
+            if (!wsClient.isConnected) {
+                document.getElementById('user-result').textContent = '请先连接WebSocket';
+                document.getElementById('user-result').className = 'result error';
+                return;
+            }
+            
+            wsClient.setUser(testUser);
+            document.getElementById('user-result').textContent = `用户登录测试:\n${JSON.stringify(testUser, null, 2)}`;
+            document.getElementById('user-result').className = 'result success';
+        }
+        
+        function testGameStarted() {
+            if (!wsClient.isConnected) {
+                document.getElementById('user-result').textContent = '请先连接WebSocket';
+                document.getElementById('user-result').className = 'result error';
+                return;
+            }
+            
+            wsClient.sendGameStarted(testUser.id);
+            document.getElementById('user-result').textContent = '游戏开始事件已发送';
+            document.getElementById('user-result').className = 'result success';
+        }
+        
+        function testGameFinished() {
+            if (!wsClient.isConnected) {
+                document.getElementById('user-result').textContent = '请先连接WebSocket';
+                document.getElementById('user-result').className = 'result error';
+                return;
+            }
+            
+            const gameData = {
+                user_id: testUser.id,
+                score: Math.floor(Math.random() * 10000) + 1000,
+                level: Math.floor(Math.random() * 10) + 1,
+                lines_cleared: Math.floor(Math.random() * 50) + 10,
+                game_duration: Math.floor(Math.random() * 600) + 60
+            };
+            
+            wsClient.sendGameFinished(gameData);
+            document.getElementById('user-result').textContent = `游戏结束事件已发送:\n${JSON.stringify(gameData, null, 2)}`;
+            document.getElementById('user-result').className = 'result success';
+        }
+        
+        // 排行榜功能测试
+        function testRequestLeaderboard() {
+            if (!wsClient.isConnected) {
+                document.getElementById('leaderboard-result').textContent = '请先连接WebSocket';
+                document.getElementById('leaderboard-result').className = 'result error';
+                return;
+            }
+            
+            wsClient.requestLeaderboard(10);
+            document.getElementById('leaderboard-result').textContent = '排行榜请求已发送';
+            document.getElementById('leaderboard-result').className = 'result success';
+        }
+        
+        function testSubscribeLeaderboard() {
+            if (!wsClient.isConnected) {
+                document.getElementById('leaderboard-result').textContent = '请先连接WebSocket';
+                document.getElementById('leaderboard-result').className = 'result error';
+                return;
+            }
+            
+            wsClient.subscribeToLeaderboard();
+            document.getElementById('leaderboard-result').textContent = '排行榜订阅请求已发送';
+            document.getElementById('leaderboard-result').className = 'result success';
+        }
+        
+        function testUnsubscribeLeaderboard() {
+            if (!wsClient.isConnected) {
+                document.getElementById('leaderboard-result').textContent = '请先连接WebSocket';
+                document.getElementById('leaderboard-result').className = 'result error';
+                return;
+            }
+            
+            wsClient.unsubscribeFromLeaderboard();
+            document.getElementById('leaderboard-result').textContent = '取消排行榜订阅请求已发送';
+            document.getElementById('leaderboard-result').className = 'result success';
+        }
+        
+        function testRequestUserRank() {
+            if (!wsClient.isConnected) {
+                document.getElementById('leaderboard-result').textContent = '请先连接WebSocket';
+                document.getElementById('leaderboard-result').className = 'result error';
+                return;
+            }
+            
+            wsClient.requestUserRank(testUser.id);
+            document.getElementById('leaderboard-result').textContent = `用户排名请求已发送 (用户ID: ${testUser.id})`;
+            document.getElementById('leaderboard-result').className = 'result success';
+        }
+        
+        // 统计信息测试
+        function testGetOnlineCount() {
+            if (!wsClient.isConnected) {
+                document.getElementById('stats-result').textContent = '请先连接WebSocket';
+                document.getElementById('stats-result').className = 'result error';
+                return;
+            }
+            
+            wsClient.getOnlineCount();
+            document.getElementById('stats-result').textContent = '在线用户数请求已发送';
+            document.getElementById('stats-result').className = 'result success';
+        }
+        
+        function testGetLeaderboardStats() {
+            if (!wsClient.isConnected) {
+                document.getElementById('stats-result').textContent = '请先连接WebSocket';
+                document.getElementById('stats-result').className = 'result error';
+                return;
+            }
+            
+            wsClient.getLeaderboardStats();
+            document.getElementById('stats-result').textContent = '排行榜统计请求已发送';
+            document.getElementById('stats-result').className = 'result success';
+        }
+        
+        function testPing() {
+            if (!wsClient.isConnected) {
+                document.getElementById('stats-result').textContent = '请先连接WebSocket';
+                document.getElementById('stats-result').className = 'result error';
+                return;
+            }
+            
+            // 手动发送ping
+            if (wsClient.socket) {
+                wsClient.connectionStats.lastPingTime = Date.now();
+                wsClient.socket.emit('ping');
+                document.getElementById('stats-result').textContent = '心跳请求已发送';
+                document.getElementById('stats-result').className = 'result success';
+            }
+        }
+        
+        function clearEventLog() {
+            document.getElementById('event-log').innerHTML = '';
+            eventLogCount = 0;
+        }
+        
+        console.log('WebSocket测试页面加载完成');
+        console.log('测试用户:', testUser);
+    </script>
+</body>
+</html>

@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>移动设备兼容性测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: white;
+            padding: 10px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .test-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 10px;
+        }
+        
+        .device-info {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .info-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .test-area {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .touch-canvas {
+            width: 100%;
+            max-width: 300px;
+            height: 400px;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            background: #000;
+            display: block;
+            margin: 15px auto;
+            touch-action: none;
+        }
+        
+        .gesture-indicators {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .gesture-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .gesture-item.active {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4CAF50;
+        }
+        
+        .virtual-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            margin: 20px 0;
+        }
+        
+        .control-row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #333;
+            border-radius: 50%;
+            background: #2a2a2a;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .control-btn:active,
+        .control-btn.pressed {
+            background: #4CAF50;
+            border-color: #4CAF50;
+            transform: scale(0.95);
+        }
+        
+        .log-area {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        
+        .test-results {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-pass {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .status-fail {
+            color: #f44336;
+            font-weight: bold;
+        }
+        
+        .status-unknown {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        
+        .instructions {
+            background: rgba(33, 150, 243, 0.1);
+            border: 1px solid rgba(33, 150, 243, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .instructions h3 {
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .instructions li {
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .instructions li:before {
+            content: "👆";
+            position: absolute;
+            left: 0;
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+            
+            .control-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .gesture-indicators {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (orientation: landscape) and (max-height: 500px) {
+            .virtual-controls {
+                flex-direction: row;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .touch-canvas {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="header">
+            <h1>🎮 移动设备兼容性测试</h1>
+            <p>测试俄罗斯方块游戏的触摸控制功能</p>
+        </div>
+        
+        <div class="instructions">
+            <h3>测试说明</h3>
+            <ul>
+                <li>在黑色画布上进行各种触摸操作</li>
+                <li>使用虚拟按钮测试控制功能</li>
+                <li>观察手势识别和反馈效果</li>
+                <li>检查设备兼容性信息</li>
+            </ul>
+        </div>
+        
+        <div class="device-info">
+            <h3>📱 设备信息</h3>
+            <div class="info-grid" id="device-info-grid">
+                <!-- 设备信息将通过JavaScript填充 -->
+            </div>
+        </div>
+        
+        <div class="test-area">
+            <h3>🎯 触摸测试区域</h3>
+            <canvas id="touch-test-canvas" class="touch-canvas"></canvas>
+            
+            <div class="gesture-indicators">
+                <div class="gesture-item" id="gesture-tap">
+                    <div>👆 点击</div>
+                    <small>单击测试</small>
+                </div>
+                <div class="gesture-item" id="gesture-swipe-left">
+                    <div>👈 左滑</div>
+                    <small>向左滑动</small>
+                </div>
+                <div class="gesture-item" id="gesture-swipe-right">
+                    <div>👉 右滑</div>
+                    <small>向右滑动</small>
+                </div>
+                <div class="gesture-item" id="gesture-swipe-up">
+                    <div>👆 上滑</div>
+                    <small>向上滑动</small>
+                </div>
+                <div class="gesture-item" id="gesture-swipe-down">
+                    <div>👇 下滑</div>
+                    <small>向下滑动</small>
+                </div>
+                <div class="gesture-item" id="gesture-longpress">
+                    <div>👆 长按</div>
+                    <small>长按测试</small>
+                </div>
+                <div class="gesture-item" id="gesture-multitouch">
+                    <div>✌️ 多点</div>
+                    <small>多点触控</small>
+                </div>
+                <div class="gesture-item" id="gesture-pinch">
+                    <div>🤏 缩放</div>
+                    <small>缩放手势</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-area">
+            <h3>🎮 虚拟控制测试</h3>
+            <div class="virtual-controls">
+                <div class="control-row">
+                    <button id="test-rotate-btn" class="control-btn">↻</button>
+                </div>
+                <div class="control-row">
+                    <button id="test-left-btn" class="control-btn">←</button>
+                    <button id="test-down-btn" class="control-btn">↓</button>
+                    <button id="test-right-btn" class="control-btn">→</button>
+                </div>
+                <div class="control-row">
+                    <button id="test-drop-btn" class="control-btn">⬇</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-results">
+            <h3>📊 测试结果</h3>
+            <div id="test-results-list">
+                <!-- 测试结果将通过JavaScript填充 -->
+            </div>
+        </div>
+        
+        <div class="test-area">
+            <h3>📝 操作日志</h3>
+            <div id="test-log" class="log-area"></div>
+            <button onclick="clearTestLog()" style="margin-top: 10px; padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 5px;">清除日志</button>
+        </div>
+    </div>
+
+    <script>
+        // 测试状态
+        const testState = {
+            deviceInfo: {},
+            testResults: {},
+            gestureCount: 0,
+            startTime: Date.now()
+        };
+        
+        // 日志函数
+        function log(message, type = 'info') {
+            const logArea = document.getElementById('test-log');
+            const time = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            logArea.innerHTML += `[${time}] ${prefix} ${message}\n`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+        
+        function clearTestLog() {
+            document.getElementById('test-log').innerHTML = '';
+        }
+        
+        // 设备检测
+        function detectDevice() {
+            const userAgent = navigator.userAgent;
+            const platform = navigator.platform;
+            
+            testState.deviceInfo = {
+                userAgent: userAgent,
+                platform: platform,
+                isAndroid: /Android/i.test(userAgent),
+                isIOS: /iPad|iPhone|iPod/.test(userAgent),
+                isTablet: /iPad/.test(userAgent) || (window.innerWidth > 768 && /Android/i.test(userAgent)),
+                isPhone: window.innerWidth <= 768,
+                hasTouch: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
+                maxTouchPoints: navigator.maxTouchPoints || 0,
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height,
+                windowWidth: window.innerWidth,
+                windowHeight: window.innerHeight,
+                devicePixelRatio: window.devicePixelRatio || 1,
+                orientation: window.orientation || 0,
+                vibrationSupported: 'vibrate' in navigator,
+                pointerEventsSupported: 'PointerEvent' in window
+            };
+            
+            return testState.deviceInfo;
+        }
+        
+        // 显示设备信息
+        function displayDeviceInfo() {
+            const info = testState.deviceInfo;
+            const grid = document.getElementById('device-info-grid');
+            
+            const items = [
+                { label: '设备类型', value: info.isIOS ? 'iOS' : info.isAndroid ? 'Android' : '其他' },
+                { label: '设备形态', value: info.isTablet ? '平板' : info.isPhone ? '手机' : '桌面' },
+                { label: '触摸支持', value: info.hasTouch ? '是' : '否' },
+                { label: '最大触点', value: info.maxTouchPoints },
+                { label: '屏幕尺寸', value: `${info.screenWidth}×${info.screenHeight}` },
+                { label: '窗口尺寸', value: `${info.windowWidth}×${info.windowHeight}` },
+                { label: '像素比', value: info.devicePixelRatio },
+                { label: '屏幕方向', value: info.orientation + '°' },
+                { label: '振动支持', value: info.vibrationSupported ? '是' : '否' },
+                { label: '指针事件', value: info.pointerEventsSupported ? '是' : '否' }
+            ];
+            
+            grid.innerHTML = items.map(item => 
+                `<div class="info-item"><strong>${item.label}:</strong> ${item.value}</div>`
+            ).join('');
+        }
+        
+        // 手势指示器
+        function showGestureIndicator(gestureType, duration = 1000) {
+            const indicator = document.getElementById(`gesture-${gestureType}`);
+            if (indicator) {
+                indicator.classList.add('active');
+                setTimeout(() => {
+                    indicator.classList.remove('active');
+                }, duration);
+            }
+        }
+        
+        // 测试结果更新
+        function updateTestResult(testName, status, details = '') {
+            testState.testResults[testName] = { status, details, timestamp: Date.now() };
+            displayTestResults();
+        }
+        
+        function displayTestResults() {
+            const resultsList = document.getElementById('test-results-list');
+            const results = testState.testResults;
+            
+            const resultItems = Object.entries(results).map(([testName, result]) => {
+                const statusClass = result.status === 'pass' ? 'status-pass' : 
+                                  result.status === 'fail' ? 'status-fail' : 'status-unknown';
+                const statusText = result.status === 'pass' ? '通过' : 
+                                 result.status === 'fail' ? '失败' : '未知';
+                
+                return `
+                    <div class="result-item">
+                        <span>${testName}</span>
+                        <span class="${statusClass}">${statusText}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            resultsList.innerHTML = resultItems;
+        }
+        
+        // 触摸事件处理
+        function setupTouchTests() {
+            const canvas = document.getElementById('touch-test-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 设置canvas尺寸
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            // 触摸状态
+            let touchState = {
+                startX: 0,
+                startY: 0,
+                startTime: 0,
+                isLongPress: false,
+                longPressTimer: null
+            };
+            
+            // 绘制提示
+            function drawInstructions() {
+                ctx.fillStyle = '#333';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#4CAF50';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('触摸测试区域', canvas.width / 2, 30);
+                
+                ctx.font = '12px Arial';
+                ctx.fillStyle = '#ccc';
+                ctx.fillText('在此区域进行各种触摸操作', canvas.width / 2, 50);
+                ctx.fillText('点击、滑动、长按、多点触控', canvas.width / 2, 70);
+            }
+            
+            drawInstructions();
+            
+            // 触摸开始
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touches = e.touches;
+                
+                if (touches.length === 1) {
+                    const touch = touches[0];
+                    const rect = canvas.getBoundingClientRect();
+                    touchState.startX = touch.clientX - rect.left;
+                    touchState.startY = touch.clientY - rect.top;
+                    touchState.startTime = Date.now();
+                    touchState.isLongPress = false;
+                    
+                    // 长按检测
+                    touchState.longPressTimer = setTimeout(() => {
+                        touchState.isLongPress = true;
+                        log('检测到长按手势');
+                        showGestureIndicator('longpress');
+                        updateTestResult('长按手势', 'pass');
+                        
+                        // 振动反馈
+                        if (navigator.vibrate) {
+                            navigator.vibrate([50, 50, 50]);
+                        }
+                    }, 500);
+                    
+                    log(`触摸开始: (${Math.round(touchState.startX)}, ${Math.round(touchState.startY)})`);
+                    updateTestResult('单点触摸', 'pass');
+                    
+                } else if (touches.length === 2) {
+                    log(`多点触摸开始: ${touches.length}个触点`);
+                    showGestureIndicator('multitouch');
+                    updateTestResult('多点触摸', 'pass');
+                }
+            });
+            
+            // 触摸移动
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touches = e.touches;
+                
+                if (touches.length === 2) {
+                    // 检测缩放手势
+                    const touch1 = touches[0];
+                    const touch2 = touches[1];
+                    const distance = Math.sqrt(
+                        Math.pow(touch2.clientX - touch1.clientX, 2) + 
+                        Math.pow(touch2.clientY - touch1.clientY, 2)
+                    );
+                    
+                    log(`缩放手势检测: 距离 ${Math.round(distance)}px`);
+                    showGestureIndicator('pinch');
+                    updateTestResult('缩放手势', 'pass');
+                }
+            });
+            
+            // 触摸结束
+            canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                
+                if (touchState.longPressTimer) {
+                    clearTimeout(touchState.longPressTimer);
+                }
+                
+                if (!touchState.isLongPress && e.changedTouches.length === 1) {
+                    const touch = e.changedTouches[0];
+                    const rect = canvas.getBoundingClientRect();
+                    const endX = touch.clientX - rect.left;
+                    const endY = touch.clientY - rect.top;
+                    const duration = Date.now() - touchState.startTime;
+                    
+                    const deltaX = endX - touchState.startX;
+                    const deltaY = endY - touchState.startY;
+                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    
+                    if (duration < 200 && distance < 15) {
+                        // 点击
+                        log(`点击手势: (${Math.round(endX)}, ${Math.round(endY)})`);
+                        showGestureIndicator('tap');
+                        updateTestResult('点击手势', 'pass');
+                        
+                    } else if (duration < 300 && distance >= 30) {
+                        // 滑动
+                        const absX = Math.abs(deltaX);
+                        const absY = Math.abs(deltaY);
+                        
+                        let direction = '';
+                        if (absX > absY) {
+                            direction = deltaX > 0 ? 'right' : 'left';
+                        } else {
+                            direction = deltaY > 0 ? 'down' : 'up';
+                        }
+                        
+                        log(`滑动手势: ${direction}, 距离: ${Math.round(distance)}px`);
+                        showGestureIndicator(`swipe-${direction}`);
+                        updateTestResult(`${direction}滑动`, 'pass');
+                    }
+                }
+                
+                testState.gestureCount++;
+            });
+            
+            // 触摸取消
+            canvas.addEventListener('touchcancel', (e) => {
+                e.preventDefault();
+                log('触摸被取消');
+                
+                if (touchState.longPressTimer) {
+                    clearTimeout(touchState.longPressTimer);
+                }
+            });
+        }
+        
+        // 虚拟按钮测试
+        function setupVirtualButtonTests() {
+            const buttons = [
+                { id: 'test-rotate-btn', name: '旋转按钮' },
+                { id: 'test-left-btn', name: '左移按钮' },
+                { id: 'test-right-btn', name: '右移按钮' },
+                { id: 'test-down-btn', name: '下移按钮' },
+                { id: 'test-drop-btn', name: '下落按钮' }
+            ];
+            
+            buttons.forEach(button => {
+                const element = document.getElementById(button.id);
+                if (element) {
+                    // 触摸开始
+                    element.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        element.classList.add('pressed');
+                        log(`${button.name}按下`);
+                        updateTestResult('虚拟按钮', 'pass');
+                        
+                        // 振动反馈
+                        if (navigator.vibrate) {
+                            navigator.vibrate(10);
+                        }
+                    });
+                    
+                    // 触摸结束
+                    element.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        element.classList.remove('pressed');
+                        log(`${button.name}释放`);
+                    });
+                    
+                    // 触摸取消
+                    element.addEventListener('touchcancel', (e) => {
+                        e.preventDefault();
+                        element.classList.remove('pressed');
+                    });
+                    
+                    // 鼠标事件（用于桌面测试）
+                    element.addEventListener('mousedown', () => {
+                        element.classList.add('pressed');
+                        log(`${button.name}按下 (鼠标)`);
+                    });
+                    
+                    element.addEventListener('mouseup', () => {
+                        element.classList.remove('pressed');
+                        log(`${button.name}释放 (鼠标)`);
+                    });
+                }
+            });
+        }
+        
+        // 屏幕方向变化处理
+        function setupOrientationHandling() {
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    const newOrientation = window.orientation || 0;
+                    log(`屏幕方向改变: ${newOrientation}°`);
+                    updateTestResult('屏幕旋转', 'pass');
+                    
+                    // 更新设备信息
+                    testState.deviceInfo.orientation = newOrientation;
+                    testState.deviceInfo.windowWidth = window.innerWidth;
+                    testState.deviceInfo.windowHeight = window.innerHeight;
+                    displayDeviceInfo();
+                }, 100);
+            });
+            
+            window.addEventListener('resize', () => {
+                log(`窗口大小改变: ${window.innerWidth}×${window.innerHeight}`);
+                updateTestResult('窗口调整', 'pass');
+            });
+        }
+        
+        // 性能测试
+        function runPerformanceTests() {
+            // 测试触摸延迟
+            let touchStartTime = 0;
+            document.addEventListener('touchstart', () => {
+                touchStartTime = performance.now();
+            });
+            
+            document.addEventListener('touchend', () => {
+                if (touchStartTime > 0) {
+                    const delay = performance.now() - touchStartTime;
+                    log(`触摸延迟: ${delay.toFixed(2)}ms`);
+                    
+                    if (delay < 100) {
+                        updateTestResult('触摸延迟', 'pass', `${delay.toFixed(2)}ms`);
+                    } else {
+                        updateTestResult('触摸延迟', 'fail', `${delay.toFixed(2)}ms (过高)`);
+                    }
+                }
+            });
+        }
+        
+        // 初始化测试
+        function initializeTests() {
+            log('开始移动设备兼容性测试');
+            
+            // 检测设备
+            detectDevice();
+            displayDeviceInfo();
+            
+            // 设置各种测试
+            setupTouchTests();
+            setupVirtualButtonTests();
+            setupOrientationHandling();
+            runPerformanceTests();
+            
+            // 初始测试结果
+            updateTestResult('设备检测', testState.deviceInfo.hasTouch ? 'pass' : 'fail');
+            updateTestResult('触摸支持', testState.deviceInfo.maxTouchPoints > 0 ? 'pass' : 'fail');
+            updateTestResult('振动支持', testState.deviceInfo.vibrationSupported ? 'pass' : 'unknown');
+            updateTestResult('指针事件', testState.deviceInfo.pointerEventsSupported ? 'pass' : 'unknown');
+            
+            log('测试初始化完成，请开始进行触摸操作');
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initializeTests);
+        
+        // 防止页面滚动
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+        
+        // 防止双击缩放
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>

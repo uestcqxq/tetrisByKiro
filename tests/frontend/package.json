@@ -1,0 +1,53 @@
+{
+  "name": "tetris-game-frontend-tests",
+  "version": "1.0.0",
+  "description": "Frontend JavaScript tests for Tetris game",
+  "main": "run-frontend-tests.js",
+  "scripts": {
+    "test": "jest --config jest.config.js",
+    "test:watch": "jest --config jest.config.js --watch",
+    "test:coverage": "jest --config jest.config.js --coverage",
+    "test:verbose": "jest --config jest.config.js --verbose"
+  },
+  "keywords": [
+    "tetris",
+    "game",
+    "javascript",
+    "testing",
+    "jest"
+  ],
+  "author": "Tetris Game Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.22.0",
+    "@babel/preset-env": "^7.22.0",
+    "babel-jest": "^29.5.0",
+    "jest": "^29.5.0",
+    "jest-environment-jsdom": "^29.5.0",
+    "jsdom": "^22.0.0"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": ["<rootDir>/setup.js"],
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "../../static/js/**/*.js",
+      "!../../static/js/**/*.min.js"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": ["text", "lcov", "html"],
+    "testMatch": [
+      "**/*.test.js",
+      "**/*.spec.js"
+    ]
+  },
+  "babel": {
+    "presets": [
+      ["@babel/preset-env", {
+        "targets": {
+          "node": "current"
+        }
+      }]
+    ]
+  }
+}

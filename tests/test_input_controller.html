@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>输入控制器测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            background: #2a2a2a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-canvas {
+            border: 2px solid #333;
+            background: #000;
+            display: block;
+            margin: 20px auto;
+        }
+        
+        .control-test {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .control-item {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .control-item.active {
+            background: #4CAF50;
+        }
+        
+        .mobile-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            margin-top: 20px;
+        }
+        
+        .control-row {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #333;
+            border-radius: 50%;
+            background: #2a2a2a;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .control-btn:hover,
+        .control-btn:active,
+        .control-btn.pressed {
+            background: #4CAF50;
+            border-color: #4CAF50;
+            transform: scale(1.1);
+        }
+        
+        .log-area {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>输入控制器测试</h1>
+        
+        <div class="test-section">
+            <h2>键盘控制测试</h2>
+            <p>按下键盘按键测试控制功能：</p>
+            
+            <div class="control-test">
+                <div class="control-item" id="key-left">
+                    <strong>← 左移</strong><br>
+                    <small>ArrowLeft / A</small>
+                </div>
+                <div class="control-item" id="key-right">
+                    <strong>→ 右移</strong><br>
+                    <small>ArrowRight / D</small>
+                </div>
+                <div class="control-item" id="key-down">
+                    <strong>↓ 下移</strong><br>
+                    <small>ArrowDown / S</small>
+                </div>
+                <div class="control-item" id="key-rotate-cw">
+                    <strong>↻ 顺时针旋转</strong><br>
+                    <small>ArrowUp / X / W</small>
+                </div>
+                <div class="control-item" id="key-rotate-ccw">
+                    <strong>↺ 逆时针旋转</strong><br>
+                    <small>Z</small>
+                </div>
+                <div class="control-item" id="key-hard-drop">
+                    <strong>⬇ 瞬间下落</strong><br>
+                    <small>Space</small>
+                </div>
+                <div class="control-item" id="key-pause">
+                    <strong>⏸ 暂停</strong><br>
+                    <small>P / Escape</small>
+                </div>
+                <div class="control-item" id="key-hold">
+                    <strong>📦 保留</strong><br>
+                    <small>C / Shift</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>触摸控制测试</h2>
+            <canvas id="touch-canvas" class="test-canvas" width="300" height="400"></canvas>
+            <p>在画布上进行触摸操作：</p>
+            <ul>
+                <li>左右滑动：移动方块</li>
+                <li>向上滑动：旋转方块</li>
+                <li>向下滑动：瞬间下落</li>
+                <li>点击左侧：向左移动</li>
+                <li>点击右侧：向右移动</li>
+                <li>点击中间：旋转方块</li>
+                <li>长按：暂停游戏</li>
+            </ul>
+        </div>
+        
+        <div class="test-section">
+            <h2>虚拟按钮测试</h2>
+            <div class="mobile-controls">
+                <div class="control-row">
+                    <button id="rotate-btn" class="control-btn">↻</button>
+                </div>
+                <div class="control-row">
+                    <button id="left-btn" class="control-btn">←</button>
+                    <button id="down-btn" class="control-btn">↓</button>
+                    <button id="right-btn" class="control-btn">→</button>
+                </div>
+                <div class="control-row">
+                    <button id="drop-btn" class="control-btn">⬇</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>操作日志</h2>
+            <div id="log-area" class="log-area"></div>
+            <button onclick="clearLog()">清除日志</button>
+        </div>
+    </div>
+
+    <!-- 引入必要的脚本 -->
+    <script>
+        // 模拟游戏类用于测试
+        class MockTetrisGame {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.gameState = {
+                    isRunning: true,
+                    isPaused: false,
+                    isGameOver: false,
+                    currentTetromino: { x: 4, y: 0 }
+                };
+            }
+            
+            moveTetromino(deltaX, deltaY) {
+                this.log(`移动方块: (${deltaX}, ${deltaY})`);
+                return true;
+            }
+            
+            rotateTetromino(direction) {
+                this.log(`旋转方块: ${direction}`);
+                return true;
+            }
+            
+            hardDrop() {
+                this.log('瞬间下落');
+            }
+            
+            togglePause() {
+                this.gameState.isPaused = !this.gameState.isPaused;
+                this.log(`游戏${this.gameState.isPaused ? '暂停' : '继续'}`);
+            }
+            
+            holdTetromino() {
+                this.log('保留方块');
+            }
+            
+            log(message) {
+                const logArea = document.getElementById('log-area');
+                const time = new Date().toLocaleTimeString();
+                logArea.innerHTML += `[${time}] ${message}\n`;
+                logArea.scrollTop = logArea.scrollHeight;
+            }
+        }
+        
+        // 清除日志
+        function clearLog() {
+            document.getElementById('log-area').innerHTML = '';
+        }
+        
+        // 键盘状态指示器
+        const keyIndicators = {
+            'ArrowLeft': 'key-left',
+            'KeyA': 'key-left',
+            'ArrowRight': 'key-right',
+            'KeyD': 'key-right',
+            'ArrowDown': 'key-down',
+            'KeyS': 'key-down',
+            'ArrowUp': 'key-rotate-cw',
+            'KeyX': 'key-rotate-cw',
+            'KeyW': 'key-rotate-cw',
+            'KeyZ': 'key-rotate-ccw',
+            'Space': 'key-hard-drop',
+            'KeyP': 'key-pause',
+            'Escape': 'key-pause',
+            'KeyC': 'key-hold',
+            'ShiftLeft': 'key-hold',
+            'ShiftRight': 'key-hold'
+        };
+        
+        // 监听键盘事件用于视觉反馈
+        document.addEventListener('keydown', (e) => {
+            const indicator = keyIndicators[e.code];
+            if (indicator) {
+                document.getElementById(indicator).classList.add('active');
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            const indicator = keyIndicators[e.code];
+            if (indicator) {
+                document.getElementById(indicator).classList.remove('active');
+            }
+        });
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 创建模拟游戏实例
+            const canvas = document.getElementById('touch-canvas');
+            const mockGame = new MockTetrisGame(canvas);
+            
+            // 动态加载InputController
+            const script = document.createElement('script');
+            script.src = '../static/js/input-controller.js';
+            script.onload = function() {
+                // 初始化输入控制器
+                const inputController = new InputController(mockGame);
+                
+                mockGame.log('输入控制器测试初始化完成');
+                mockGame.log('请使用键盘或触摸操作进行测试');
+                
+                // 存储到全局变量以便调试
+                window.testGame = mockGame;
+                window.testInputController = inputController;
+            };
+            document.head.appendChild(script);
+        });
+    </script>
+</body>
+</html>
