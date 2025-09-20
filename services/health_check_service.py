@@ -137,13 +137,25 @@ class HealthCheckService(BaseService):
         start_time = time.time()
         
         try:
-            db_manager = DatabaseManager()
+            # 检查是否在Flask应用上下文中
+            from flask import has_app_context, current_app
+            
+            if not has_app_context():
+                self.components['database'] = ComponentHealth(
+                    name='database',
+                    status=HealthStatus.UNKNOWN,
+                    message="无应用上下文，跳过数据库检查",
+                    response_time=0.0,
+                    last_check=datetime.now()
+                )
+                return
+            
+            # 使用Flask-SQLAlchemy的数据库连接
+            from models.base import db
+            from sqlalchemy import text
             
             # 执行简单查询测试连接
-            with db_manager.get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT 1")
-                result = cursor.fetchone()
+            result = db.session.execute(text("SELECT 1")).fetchone()
             
             response_time = time.time() - start_time
             
@@ -154,16 +166,27 @@ class HealthCheckService(BaseService):
                 status = HealthStatus.HEALTHY
                 message = "数据库连接正常"
             
+            # 获取连接池信息
+            pool_info = {}
+            try:
+                pool = db.engine.pool
+                pool_info = {
+                    'pool_size': pool.size(),
+                    'checked_in': pool.checkedin(),
+                    'checked_out': pool.checkedout(),
+                    'overflow': pool.overflow(),
+                    'invalid': pool.invalid(),
+                }
+            except Exception:
+                pool_info = {'pool_info': 'unavailable'}
+            
             self.components['database'] = ComponentHealth(
                 name='database',
                 status=status,
                 message=message,
                 response_time=response_time,
                 last_check=datetime.now(),
-                details={
-                    'connection_pool_size': getattr(db_manager, 'pool_size', 'unknown'),
-                    'active_connections': getattr(db_manager, 'active_connections', 'unknown')
-                }
+                details=pool_info
             )
             
         except Exception as e:

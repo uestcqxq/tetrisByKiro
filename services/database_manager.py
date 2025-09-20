@@ -420,9 +420,26 @@ class DatabaseTransactionManager:
         return stats
 
 
-# 全局实例
-connection_manager = DatabaseConnectionManager()
-transaction_manager = DatabaseTransactionManager(connection_manager)
+# 全局实例 - 延迟初始化
+connection_manager = None
+transaction_manager = None
+
+def get_connection_manager():
+    """获取连接管理器实例"""
+    global connection_manager
+    if connection_manager is None:
+        connection_manager = DatabaseConnectionManager()
+    return connection_manager
+
+def get_transaction_manager():
+    """获取事务管理器实例"""
+    global transaction_manager
+    if transaction_manager is None:
+        transaction_manager = DatabaseTransactionManager(get_connection_manager())
+    return transaction_manager
+
+# 兼容性别名
+DatabaseManager = DatabaseConnectionManager
 
 
 def init_database_manager(app) -> None:
@@ -433,19 +450,35 @@ def init_database_manager(app) -> None:
         app: Flask应用实例
     """
     try:
-        # 配置连接池
-        connection_manager.configure_connection_pool(app)
+        # 获取管理器实例
+        conn_manager = get_connection_manager()
+        trans_manager = get_transaction_manager()
         
-        # 设置连接事件监听器
-        @app.before_first_request
-        def setup_db_events():
-            connection_manager.setup_connection_events(db.engine)
+        # 配置连接池
+        conn_manager.configure_connection_pool(app)
+        
+        # 设置连接事件监听器 - 延迟到应用完全初始化后
+        # 这样可以避免在应用完全初始化之前访问数据库引擎
+        def setup_events():
+            try:
+                if hasattr(db, 'engine') and db.engine:
+                    conn_manager.setup_connection_events(db.engine)
+                    logger.info("数据库连接事件监听器设置完成")
+            except Exception as e:
+                logger.warning(f"设置数据库连接事件监听器失败: {str(e)}")
+        
+        # 使用 teardown_appcontext 来延迟设置事件监听器
+        @app.teardown_appcontext
+        def setup_db_events_once(error):
+            if not hasattr(app, '_db_events_setup'):
+                setup_events()
+                app._db_events_setup = True
         
         # 添加健康检查路由
         @app.route('/api/health/database')
         def database_health():
-            is_healthy = connection_manager.check_connection_health(force_check=True)
-            stats = connection_manager.get_connection_stats()
+            is_healthy = conn_manager.check_connection_health(force_check=True)
+            stats = conn_manager.get_connection_stats()
             
             return {
                 'healthy': is_healthy,
@@ -456,8 +489,8 @@ def init_database_manager(app) -> None:
         # 添加数据库统计路由
         @app.route('/api/admin/database/stats')
         def database_stats():
-            connection_stats = connection_manager.get_connection_stats()
-            transaction_stats = transaction_manager.get_transaction_stats()
+            connection_stats = conn_manager.get_connection_stats()
+            transaction_stats = trans_manager.get_transaction_stats()
             
             return {
                 'connection_stats': connection_stats,
@@ -469,4 +502,5 @@ def init_database_manager(app) -> None:
         
     except Exception as e:
         logger.error(f"初始化数据库管理器失败: {str(e)}")
-        raise
+        # 不要抛出异常，让应用继续启动
+        logger.warning("数据库管理器初始化失败，但应用将继续启动")

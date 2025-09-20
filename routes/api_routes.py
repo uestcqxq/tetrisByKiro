@@ -5,6 +5,7 @@ API路由
 
 from flask import Blueprint, request, jsonify, current_app
 from services import UserService, GameService
+from services.base_service import ValidationError, DatabaseError
 from functools import wraps
 import uuid
 
@@ -37,6 +38,10 @@ def validate_uuid(uuid_string):
 def create_user():
     """创建新用户"""
     try:
+        # 检查Content-Type
+        if not request.is_json:
+            return jsonify({'error': '请求必须是JSON格式'}), 400
+            
         data = request.get_json() or {}
         username = data.get('username')
         
@@ -58,6 +63,9 @@ def create_user():
             'message': '用户创建成功'
         }), 201
     
+    except ValidationError as e:
+        current_app.logger.warning(f'User creation validation error: {str(e)}')
+        return jsonify({'error': str(e)}), 400
     except ValueError as e:
         current_app.logger.warning(f'User creation validation error: {str(e)}')
         return jsonify({'error': str(e)}), 400
@@ -138,6 +146,9 @@ def save_game():
             'message': '游戏得分保存成功'
         }), 201
     
+    except ValidationError as e:
+        current_app.logger.warning(f'Game save validation error: {str(e)}')
+        return jsonify({'error': str(e)}), 400
     except ValueError as e:
         current_app.logger.warning(f'Game save validation error: {str(e)}')
         return jsonify({'error': str(e)}), 400
@@ -199,16 +210,24 @@ def get_user_rank(user_id):
 def health_ping():
     """网络连接健康检查端点"""
     try:
-        # 简单的ping响应
+        from datetime import datetime
+        # 使用ISO格式时间戳，提高可读性
+        timestamp = datetime.now().isoformat()
         return jsonify({
             'status': 'ok',
-            'timestamp': current_app.config.get('STARTUP_TIME'),
-            'server_time': str(uuid.uuid4())[:8]  # 简单的响应标识
+            'startup_time': current_app.config.get('STARTUP_TIME'),
+            'server_time': timestamp,
+            'timestamp': timestamp
         }), 200
     
     except Exception as e:
         current_app.logger.error(f'Health ping error: {str(e)}')
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        from datetime import datetime
+        return jsonify({
+            'status': 'error', 
+            'message': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
 
 
 @api_bp.route('/health/database', methods=['GET'])
@@ -216,6 +235,7 @@ def health_database():
     """数据库健康检查端点"""
     try:
         from services.database_manager import connection_manager
+        from datetime import datetime
         
         # 检查数据库连接
         is_healthy = connection_manager.check_connection_health(force_check=True)
@@ -224,15 +244,16 @@ def health_database():
         return jsonify({
             'healthy': is_healthy,
             'stats': stats,
-            'timestamp': str(uuid.uuid4())[:8]
+            'timestamp': datetime.now().isoformat()
         }), 200 if is_healthy else 503
     
     except Exception as e:
         current_app.logger.error(f'Database health check error: {str(e)}')
+        from datetime import datetime
         return jsonify({
             'healthy': False,
             'error': str(e),
-            'timestamp': str(uuid.uuid4())[:8]
+            'timestamp': datetime.now().isoformat()
         }), 503
 
 

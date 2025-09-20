@@ -21,6 +21,9 @@ class ErrorHandler {
         this.errorQueue = [];
         this.retryQueue = new Map();
         
+        // 事件系统
+        this.eventListeners = new Map();
+        
         // 错误统计
         this.errorStats = {
             totalErrors: 0,
@@ -357,8 +360,10 @@ class ErrorHandler {
         
         if (isOnline && !wasOnline) {
             this.handleBackOnline();
+            this.emit('online', { isOnline: true, timestamp: Date.now() });
         } else if (!isOnline && wasOnline) {
             this.handleGoOffline();
+            this.emit('offline', { isOnline: false, timestamp: Date.now() });
         }
         
         this.updateConnectionStatus();
@@ -1027,6 +1032,43 @@ class ErrorHandler {
         
         console.log('错误处理器已销毁');
     }
+
+    /**
+     * 添加事件监听器
+     */
+    on(event, callback) {
+        if (!this.eventListeners.has(event)) {
+            this.eventListeners.set(event, []);
+        }
+        this.eventListeners.get(event).push(callback);
+    }
+
+    /**
+     * 移除事件监听器
+     */
+    off(event, callback) {
+        if (!this.eventListeners.has(event)) return;
+        const listeners = this.eventListeners.get(event);
+        const index = listeners.indexOf(callback);
+        if (index > -1) {
+            listeners.splice(index, 1);
+        }
+    }
+
+    /**
+     * 触发事件
+     */
+    emit(event, data) {
+        if (!this.eventListeners.has(event)) return;
+        const listeners = this.eventListeners.get(event);
+        listeners.forEach(callback => {
+            try {
+                callback(data);
+            } catch (error) {
+                console.error('事件监听器执行错误:', error);
+            }
+        });
+    }
 }
 
 // 创建全局错误处理器实例
@@ -1043,5 +1085,3 @@ window.errorHandler = new ErrorHandler({
 window.ErrorHandler = ErrorHandler;
 
 console.log('错误处理器模块加载完成');
-</content>
-</invoke>

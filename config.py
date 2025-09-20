@@ -4,7 +4,10 @@
 """
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
+# 获取项目根目录
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 
 class Config:
@@ -40,7 +43,7 @@ class Config:
     LOG_FILE = os.environ.get('LOG_FILE', 'tetris_game.log')
     
     # 应用信息
-    STARTUP_TIME = datetime.utcnow().isoformat()
+    STARTUP_TIME = datetime.now(timezone.utc).isoformat()
     
     @staticmethod
     def init_app(app):
@@ -55,19 +58,22 @@ class Config:
 class DevelopmentConfig(Config):
     """开发环境配置"""
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or 'sqlite:///tetris_dev.db'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'instance', 'tetris_dev.db')
 
 
 class TestingConfig(Config):
     """测试环境配置"""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or 'sqlite:///tetris_test.db'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'instance', 'tetris_test.db')
     WTF_CSRF_ENABLED = False
 
 
 class ProductionConfig(Config):
     """生产环境配置"""
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///tetris.db'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'instance', 'tetris.db')
     
     @classmethod
     def init_app(cls, app):

@@ -18,6 +18,13 @@ class BaseModel(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())
+        if not self.created_at:
+            self.created_at = datetime.now(timezone.utc)
+    
     def to_dict(self):
         """将模型转换为字典"""
         result = {}
@@ -42,4 +49,4 @@ class BaseModel(db.Model):
     @classmethod
     def get_by_id(cls, id):
         """根据ID获取模型实例"""
-        return cls.query.get(id)
+        return db.session.get(cls, id)

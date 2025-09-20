@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏加载调试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+
+        .debug-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .module-status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .module-status.loading {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+        }
+
+        .module-status.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+
+        .module-status.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-indicator.loading {
+            background: #ffc107;
+            animation: pulse 1s infinite;
+        }
+
+        .status-indicator.success {
+            background: #28a745;
+        }
+
+        .status-indicator.error {
+            background: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .log-container {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 0;
+        }
+
+        .log-entry.error {
+            color: #dc3545;
+        }
+
+        .log-entry.warn {
+            color: #ffc107;
+        }
+
+        .log-entry.info {
+            color: #17a2b8;
+        }
+
+        .controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="debug-container">
+        <h1>游戏模块加载调试</h1>
+        <p>这个页面用于调试游戏模块的加载过程，帮助识别哪个模块导致了加载卡住。</p>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="startDebugLoading()">开始调试加载</button>
+            <button class="btn btn-secondary" onclick="clearLogs()">清除日志</button>
+            <button class="btn btn-success" onclick="testBasicModules()">测试基础模块</button>
+        </div>
+
+        <div id="module-status-container">
+            <h3>模块加载状态</h3>
+            <div id="module-list"></div>
+        </div>
+
+        <div class="log-container">
+            <h3>加载日志</h3>
+            <div id="log-output"></div>
+        </div>
+    </div>
+
+    <!-- 按顺序加载脚本 -->
+    <script src="/static/js/error-handler.js"></script>
+    <script src="/static/js/error-recovery-system.js"></script>
+    <script src="/static/js/device-detector.js"></script>
+    <script src="/static/js/network-manager.js"></script>
+    <script src="/static/js/offline-storage.js"></script>
+    <script src="/static/js/resource-manager.js"></script>
+    <script src="/static/js/performance-optimizer.js"></script>
+    <script src="/static/js/api-client.js"></script>
+    <script src="/static/js/websocket-client.js"></script>
+    <script src="/static/js/tetromino-manager.js"></script>
+    <script src="/static/js/board-manager.js"></script>
+    <script src="/static/js/difficulty-manager.js"></script>
+    <script src="/static/js/scoring-system.js"></script>
+    <script src="/static/js/game-renderer.js"></script>
+    <script src="/static/js/ui-manager.js"></script>
+    <script src="/static/js/mobile-touch-handler.js"></script>
+    <script src="/static/js/input-controller.js"></script>
+    <script src="/static/js/tetris-game.js"></script>
+    <script src="/static/js/module-loader.js"></script>
+    <script src="/static/js/game-bootstrap.js"></script>
+
+    <script>
+        // 调试工具
+        const debugLogger = {
+            logs: [],
+
+            log(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = {
+                    timestamp,
+                    message,
+                    type
+                };
+
+                this.logs.push(logEntry);
+                this.displayLog(logEntry);
+
+                // 同时输出到控制台
+                console[type](message);
+            },
+
+            displayLog(entry) {
+                const logOutput = document.getElementById('log-output');
+                const logElement = document.createElement('div');
+                logElement.className = `log-entry ${entry.type}`;
+                logElement.textContent = `[${entry.timestamp}] ${entry.message}`;
+                logOutput.appendChild(logElement);
+                logOutput.scrollTop = logOutput.scrollHeight;
+            },
+
+            clear() {
+                this.logs = [];
+                document.getElementById('log-output').innerHTML = '';
+            }
+        };
+
+        // 模块状态管理
+        const moduleTracker = {
+            modules: [
+                'ErrorHandler',
+                'ErrorRecoverySystem',
+                'DeviceDetector',
+                'NetworkManager',
+                'OfflineStorage',
+                'ResourceManager',
+                'PerformanceOptimizer',
+                'APIClient',
+                'WebSocketClient',
+                'TetrominoManager',
+                'BoardManager',
+                'DifficultyManager',
+                'ScoringSystem',
+                'GameRenderer',
+                'UIManager',
+                'MobileTouchHandler',
+                'InputController',
+                'TetrisGame',
+                'ModuleLoader',
+                'GameBootstrap'
+            ],
+
+            statuses: {},
+
+            init() {
+                const moduleList = document.getElementById('module-list');
+                moduleList.innerHTML = '';
+
+                this.modules.forEach(moduleName => {
+                    this.statuses[moduleName] = 'loading';
+
+                    const moduleDiv = document.createElement('div');
+                    moduleDiv.className = 'module-status loading';
+                    moduleDiv.id = `module-${moduleName}`;
+                    moduleDiv.innerHTML = `
+                        <span>${moduleName}</span>
+                        <span class="status-indicator loading"></span>
+                    `;
+
+                    moduleList.appendChild(moduleDiv);
+                });
+            },
+
+            updateStatus(moduleName, status, error = null) {
+                this.statuses[moduleName] = status;
+
+                const moduleDiv = document.getElementById(`module-${moduleName}`);
+                if (moduleDiv) {
+                    moduleDiv.className = `module-status ${status}`;
+                    const indicator = moduleDiv.querySelector('.status-indicator');
+                    indicator.className = `status-indicator ${status}`;
+
+                    if (error) {
+                        moduleDiv.title = error;
+                    }
+                }
+
+                const message = status === 'success'
+                    ? `✓ ${moduleName} 加载成功`
+                    : status === 'error'
+                        ? `✗ ${moduleName} 加载失败: ${error}`
+                        : `⏳ ${moduleName} 正在加载...`;
+
+                debugLogger.log(message, status === 'error' ? 'error' : 'info');
+            }
+        };
+
+        // 测试函数
+        function testBasicModules() {
+            debugLogger.log('开始测试基础模块...', 'info');
+            moduleTracker.init();
+
+            moduleTracker.modules.forEach(moduleName => {
+                try {
+                    if (typeof window[moduleName] !== 'undefined') {
+                        moduleTracker.updateStatus(moduleName, 'success');
+                    } else {
+                        moduleTracker.updateStatus(moduleName, 'error', '类未定义');
+                    }
+                } catch (error) {
+                    moduleTracker.updateStatus(moduleName, 'error', error.message);
+                }
+            });
+
+            debugLogger.log('基础模块测试完成', 'info');
+        }
+
+        async function startDebugLoading() {
+            debugLogger.log('开始调试加载过程...', 'info');
+            moduleTracker.init();
+
+            try {
+                // 测试GameBootstrap初始化
+                if (typeof GameBootstrap !== 'undefined') {
+                    debugLogger.log('创建GameBootstrap实例...', 'info');
+
+                    const bootstrap = new GameBootstrap({
+                        maxStartupTime: 10000, // 缩短超时时间用于调试
+                        enableFallbackMode: true,
+                        debugMode: true
+                    });
+
+                    // 监听所有事件
+                    bootstrap.on('stateUpdate', (data) => {
+                        debugLogger.log(`状态更新: ${data.stage} (${Math.round(data.progress * 100)}%) - ${data.message}`, 'info');
+                    });
+
+                    bootstrap.on('moduleLoadStart', (data) => {
+                        debugLogger.log(`开始加载模块: ${data.module}`, 'info');
+                        if (moduleTracker.statuses[data.module] !== undefined) {
+                            moduleTracker.updateStatus(data.module, 'loading');
+                        }
+                    });
+
+                    bootstrap.on('moduleLoadSuccess', (data) => {
+                        debugLogger.log(`✓ ${data.module} 加载成功`, 'info');
+                        if (moduleTracker.statuses[data.module] !== undefined) {
+                            moduleTracker.updateStatus(data.module, 'success');
+                        }
+                    });
+
+                    bootstrap.on('moduleLoadFailed', (data) => {
+                        debugLogger.log(`✗ ${data.module} 加载失败: ${data.error.message}`, 'error');
+                        if (moduleTracker.statuses[data.module] !== undefined) {
+                            moduleTracker.updateStatus(data.module, 'error', data.error.message);
+                        }
+                    });
+
+                    bootstrap.on('initializationComplete', (state) => {
+                        debugLogger.log('🎉 初始化完成!', 'info');
+                    });
+
+                    bootstrap.on('initializationError', (data) => {
+                        debugLogger.log(`💥 初始化失败: ${data.error.message}`, 'error');
+                    });
+
+                    bootstrap.on('fallbackModeEnabled', (state) => {
+                        debugLogger.log('⚠️ 降级模式已启用', 'warn');
+                    });
+
+                    // 开始初始化
+                    await bootstrap.initialize();
+
+                } else {
+                    debugLogger.log('GameBootstrap类未找到!', 'error');
+                }
+
+            } catch (error) {
+                debugLogger.log(`调试加载失败: ${error.message}`, 'error');
+            }
+        }
+
+        function clearLogs() {
+            debugLogger.clear();
+        }
+
+        // 页面加载完成后自动测试
+        document.addEventListener('DOMContentLoaded', () => {
+            debugLogger.log('调试页面加载完成', 'info');
+            testBasicModules();
+        });
+    </script>
+</body>
+
+</html>

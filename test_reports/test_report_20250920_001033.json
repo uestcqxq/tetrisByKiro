@@ -1,0 +1,109 @@
+{
+  "start_time": "2025-09-20T00:10:30.404015",
+  "end_time": null,
+  "total_duration": 0,
+  "tests": {
+    "test_models": {
+      "category": "unit",
+      "status": "failed",
+      "duration": 0.6506564617156982,
+      "output": "",
+      "error": "C:\\Users\\uestc\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python312\\site-packages\\_pytest\\config\\__init__.py:331: PluggyTeardownRaisedWarning: A plugin raised an exception during an old-style hookwrapper teardown.\nPlugin: helpconfig, Hook: pytest_cmdline_parse\nUsageError: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_models.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\nFor more information see https://pluggy.readthedocs.io/en/stable/api_reference.html#pluggy.PluggyTeardownRaisedWarning\n  config = pluginmanager.hook.pytest_cmdline_parse(\nERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_models.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\n\n",
+      "details": {}
+    },
+    "test_user_service": {
+      "category": "unit",
+      "status": "failed",
+      "duration": 0.19251632690429688,
+      "output": "",
+      "error": "C:\\Users\\uestc\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python312\\site-packages\\_pytest\\config\\__init__.py:331: PluggyTeardownRaisedWarning: A plugin raised an exception during an old-style hookwrapper teardown.\nPlugin: helpconfig, Hook: pytest_cmdline_parse\nUsageError: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_user_service.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\nFor more information see https://pluggy.readthedocs.io/en/stable/api_reference.html#pluggy.PluggyTeardownRaisedWarning\n  config = pluginmanager.hook.pytest_cmdline_parse(\nERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_user_service.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\n\n",
+      "details": {}
+    },
+    "test_game_service": {
+      "category": "unit",
+      "status": "failed",
+      "duration": 0.22792458534240723,
+      "output": "",
+      "error": "C:\\Users\\uestc\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python312\\site-packages\\_pytest\\config\\__init__.py:331: PluggyTeardownRaisedWarning: A plugin raised an exception during an old-style hookwrapper teardown.\nPlugin: helpconfig, Hook: pytest_cmdline_parse\nUsageError: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_game_service.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\nFor more information see https://pluggy.readthedocs.io/en/stable/api_reference.html#pluggy.PluggyTeardownRaisedWarning\n  config = pluginmanager.hook.pytest_cmdline_parse(\nERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_game_service.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\n\n",
+      "details": {}
+    },
+    "test_database_manager": {
+      "category": "unit",
+      "status": "failed",
+      "duration": 0.1885688304901123,
+      "output": "",
+      "error": "C:\\Users\\uestc\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python312\\site-packages\\_pytest\\config\\__init__.py:331: PluggyTeardownRaisedWarning: A plugin raised an exception during an old-style hookwrapper teardown.\nPlugin: helpconfig, Hook: pytest_cmdline_parse\nUsageError: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_database_manager.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\nFor more information see https://pluggy.readthedocs.io/en/stable/api_reference.html#pluggy.PluggyTeardownRaisedWarning\n  config = pluginmanager.hook.pytest_cmdline_parse(\nERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_database_manager.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\n\n",
+      "details": {}
+    },
+    "test_base_service": {
+      "category": "unit",
+      "status": "failed",
+      "duration": 0.19353747367858887,
+      "output": "",
+      "error": "C:\\Users\\uestc\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python312\\site-packages\\_pytest\\config\\__init__.py:331: PluggyTeardownRaisedWarning: A plugin raised an exception during an old-style hookwrapper teardown.\nPlugin: helpconfig, Hook: pytest_cmdline_parse\nUsageError: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_base_service.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\nFor more information see https://pluggy.readthedocs.io/en/stable/api_reference.html#pluggy.PluggyTeardownRaisedWarning\n  config = pluginmanager.hook.pytest_cmdline_parse(\nERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_base_service.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\n\n",
+      "details": {}
+    },
+    "test_data_cleanup_service": {
+      "category": "unit",
+      "status": "failed",
+      "duration": 0.20001697540283203,
+      "output": "",
+      "error": "C:\\Users\\uestc\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python312\\site-packages\\_pytest\\config\\__init__.py:331: PluggyTeardownRaisedWarning: A plugin raised an exception during an old-style hookwrapper teardown.\nPlugin: helpconfig, Hook: pytest_cmdline_parse\nUsageError: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_data_cleanup_service.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\nFor more information see https://pluggy.readthedocs.io/en/stable/api_reference.html#pluggy.PluggyTeardownRaisedWarning\n  config = pluginmanager.hook.pytest_cmdline_parse(\nERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_data_cleanup_service.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\n\n",
+      "details": {}
+    },
+    "test_api_routes": {
+      "category": "integration",
+      "status": "failed",
+      "duration": 0.19465041160583496,
+      "output": "",
+      "error": "C:\\Users\\uestc\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python312\\site-packages\\_pytest\\config\\__init__.py:331: PluggyTeardownRaisedWarning: A plugin raised an exception during an old-style hookwrapper teardown.\nPlugin: helpconfig, Hook: pytest_cmdline_parse\nUsageError: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_api_routes.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\nFor more information see https://pluggy.readthedocs.io/en/stable/api_reference.html#pluggy.PluggyTeardownRaisedWarning\n  config = pluginmanager.hook.pytest_cmdline_parse(\nERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_api_routes.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\n\n",
+      "details": {}
+    },
+    "test_socketio": {
+      "category": "integration",
+      "status": "failed",
+      "duration": 0.19928884506225586,
+      "output": "",
+      "error": "C:\\Users\\uestc\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python312\\site-packages\\_pytest\\config\\__init__.py:331: PluggyTeardownRaisedWarning: A plugin raised an exception during an old-style hookwrapper teardown.\nPlugin: helpconfig, Hook: pytest_cmdline_parse\nUsageError: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_socketio.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\nFor more information see https://pluggy.readthedocs.io/en/stable/api_reference.html#pluggy.PluggyTeardownRaisedWarning\n  config = pluginmanager.hook.pytest_cmdline_parse(\nERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_socketio.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\n\n",
+      "details": {}
+    },
+    "test_socketio_leaderboard": {
+      "category": "integration",
+      "status": "failed",
+      "duration": 0.19800066947937012,
+      "output": "",
+      "error": "C:\\Users\\uestc\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python312\\site-packages\\_pytest\\config\\__init__.py:331: PluggyTeardownRaisedWarning: A plugin raised an exception during an old-style hookwrapper teardown.\nPlugin: helpconfig, Hook: pytest_cmdline_parse\nUsageError: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_socketio_leaderboard.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\nFor more information see https://pluggy.readthedocs.io/en/stable/api_reference.html#pluggy.PluggyTeardownRaisedWarning\n  config = pluginmanager.hook.pytest_cmdline_parse(\nERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_socketio_leaderboard.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\n\n",
+      "details": {}
+    },
+    "test_e2e_integration": {
+      "category": "e2e",
+      "status": "failed",
+      "duration": 0.19357061386108398,
+      "output": "",
+      "error": "C:\\Users\\uestc\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python312\\site-packages\\_pytest\\config\\__init__.py:331: PluggyTeardownRaisedWarning: A plugin raised an exception during an old-style hookwrapper teardown.\nPlugin: helpconfig, Hook: pytest_cmdline_parse\nUsageError: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_e2e_integration.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\nFor more information see https://pluggy.readthedocs.io/en/stable/api_reference.html#pluggy.PluggyTeardownRaisedWarning\n  config = pluginmanager.hook.pytest_cmdline_parse(\nERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=test_report_test_e2e_integration.json\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\n\n",
+      "details": {}
+    },
+    "frontend": {
+      "status": "skipped",
+      "reason": "Node.js/npm not available"
+    },
+    "performance": {
+      "status": "failed",
+      "output": "",
+      "error": "C:\\Users\\uestc\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python312\\site-packages\\_pytest\\config\\__init__.py:331: PluggyTeardownRaisedWarning: A plugin raised an exception during an old-style hookwrapper teardown.\nPlugin: helpconfig, Hook: pytest_cmdline_parse\nUsageError: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --benchmark-only\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\nFor more information see https://pluggy.readthedocs.io/en/stable/api_reference.html#pluggy.PluggyTeardownRaisedWarning\n  config = pluginmanager.hook.pytest_cmdline_parse(\nERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --benchmark-only\n  inifile: None\n  rootdir: E:\\myProjects\\kiroProjects\n\n"
+    },
+    "security": {
+      "status": "skipped",
+      "reason": "bandit not available"
+    }
+  },
+  "summary": {
+    "total_tests": 10,
+    "passed": 0,
+    "failed": 11,
+    "skipped": 2,
+    "errors": 0
+  },
+  "coverage": {},
+  "performance": {}
+}

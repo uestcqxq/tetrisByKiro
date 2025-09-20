@@ -26,10 +26,16 @@ class GameRecord(BaseModel):
     
     @classmethod
     def get_user_rank(cls, user_id):
-        """获取用户排名"""
-        user_best_score = cls.query.filter_by(user_id=user_id).order_by(cls.score.desc()).first()
-        if not user_best_score:
+        """获取用户排名，考虑同分情况"""
+        # 获取用户的最高得分
+        user_record = cls.query.filter_by(user_id=user_id).order_by(cls.score.desc()).first()
+        if not user_record:
             return None
         
-        better_scores = cls.query.filter(cls.score > user_best_score.score).count()
-        return better_scores + 1
+        # 计算排名 - 简化逻辑，直接计算有多少用户得分更高
+        higher_score_count = cls.query.filter(cls.score > user_record.score).count()
+        
+        # 排名 = 得分更高的记录数 + 1
+        rank = higher_score_count + 1
+        
+        return rank

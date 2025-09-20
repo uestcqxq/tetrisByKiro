@@ -11,7 +11,7 @@ from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO
 from flask_cors import CORS
 from models.base import db
-from services.database_manager import init_database_manager, connection_manager
+from services.database_manager import init_database_manager
 import os
 import logging
 from datetime import datetime
@@ -111,9 +111,18 @@ def register_routes(app):
         app.register_blueprint(api_bp, url_prefix='/api')
         app.register_blueprint(health_bp, url_prefix='/health')
         
-        # 启动健康监控
+        # 延迟启动健康监控 - 在第一次请求后启动
         from services.health_check_service import health_service
-        health_service.start_monitoring()
+        
+        def start_health_monitoring():
+            if not hasattr(app, '_health_monitoring_started'):
+                health_service.start_monitoring()
+                app._health_monitoring_started = True
+        
+        # 使用 before_request 来延迟启动
+        @app.before_request
+        def ensure_health_monitoring():
+            start_health_monitoring()
         
     except ImportError:
         # 如果路由模块不存在，创建基本路由
@@ -543,6 +552,14 @@ def register_socketio_events(app):
 
 if __name__ == '__main__':
     app = create_app()
+    
+    # 在应用上下文中初始化数据库
     with app.app_context():
-        db.create_all()
-    socketio.run(app, debug=True)
+        try:
+            db.create_all()
+            print("数据库表创建成功")
+        except Exception as e:
+            print(f"数据库初始化失败: {e}")
+    
+    print("启动Flask应用...")
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)

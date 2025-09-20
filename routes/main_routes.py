@@ -37,10 +37,17 @@ def catch_all(path):
     """捕获所有路由，支持SPA前端路由"""
     # 如果是静态文件请求，尝试返回文件
     if '.' in path:
-        try:
-            return send_from_directory(current_app.static_folder, path)
-        except:
-            pass
+        # 检查文件扩展名，确保是静态资源
+        allowed_extensions = {'.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.mp3', '.wav', '.ogg'}
+        file_ext = os.path.splitext(path)[1].lower()
+        
+        if file_ext in allowed_extensions:
+            try:
+                return send_from_directory(current_app.static_folder, path)
+            except FileNotFoundError:
+                # 如果静态文件不存在，返回404而不是HTML页面
+                from flask import abort
+                abort(404)
     
     # 否则返回主页面，让前端路由处理
     return render_template('index.html')

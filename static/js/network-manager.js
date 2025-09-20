@@ -573,4 +573,3 @@ window.networkManager = new NetworkManager({
 window.NetworkManager = NetworkManager;
 
 console.log('网络状态管理器模块加载完成');
-</content>

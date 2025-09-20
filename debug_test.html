@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏加载调试测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+        .debug-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .status-panel {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        .error-panel {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #f44336;
+        }
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #45a049;
+        }
+        .log {
+            background: #000;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background: #4CAF50; }
+        .status-error { background: #f44336; }
+        .status-warning { background: #ff9800; }
+        .status-info { background: #2196F3; }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>🎮 俄罗斯方块游戏加载调试</h1>
+        
+        <div class="status-panel">
+            <h2>✅ 修复状态</h2>
+            <p><span class="status-indicator status-success"></span>启动管理器已创建</p>
+            <p><span class="status-indicator status-success"></span>加载界面已优化</p>
+            <p><span class="status-indicator status-success"></span>超时保护已实现</p>
+            <p><span class="status-indicator status-success"></span>错误恢复已添加</p>
+            <p><span class="status-indicator status-success"></span>降级模式已支持</p>
+        </div>
+        
+        <div class="status-panel">
+            <h2>🔧 修复内容</h2>
+            <ul>
+                <li><strong>模块化启动</strong>: 区分核心模块和可选模块，避免单点故障</li>
+                <li><strong>超时保护</strong>: 15秒最大启动时间，防止无限等待</li>
+                <li><strong>错误恢复</strong>: 提供重新加载、简化模式、跳过加载等选项</li>
+                <li><strong>进度显示</strong>: 实时显示加载进度和当前状态</li>
+                <li><strong>用户控制</strong>: 用户可以选择如何处理加载问题</li>
+            </ul>
+        </div>
+        
+        <div class="status-panel">
+            <h2>🎯 解决的问题</h2>
+            <ul>
+                <li>✅ 游戏卡在"初始化游戏..."界面</li>
+                <li>✅ 复杂的依赖链导致加载失败</li>
+                <li>✅ 缺乏用户友好的错误提示</li>
+                <li>✅ 没有超时保护机制</li>
+                <li>✅ 无法在网络较差时正常启动</li>
+            </ul>
+        </div>
+        
+        <div class="status-panel">
+            <h2>🚀 测试游戏</h2>
+            <p>修复已完成！现在您可以测试游戏是否能正常加载：</p>
+            <button class="btn" onclick="window.open('http://127.0.0.1:5000', '_blank')">
+                🎮 打开游戏 (新窗口)
+            </button>
+            <button class="btn" onclick="location.href='http://127.0.0.1:5000'">
+                🎮 打开游戏 (当前窗口)
+            </button>
+        </div>
+        
+        <div class="status-panel">
+            <h2>📊 实时监控</h2>
+            <button class="btn" onclick="startMonitoring()">开始监控</button>
+            <button class="btn" onclick="stopMonitoring()">停止监控</button>
+            <button class="btn" onclick="clearMonitorLog()">清除日志</button>
+            <div id="monitor-log" class="log">点击"开始监控"来查看游戏加载状态...</div>
+        </div>
+        
+        <div class="status-panel">
+            <h2>🔍 问题排查</h2>
+            <p>如果游戏仍然无法正常加载，请检查：</p>
+            <ul>
+                <li>浏览器控制台是否有JavaScript错误</li>
+                <li>网络连接是否正常</li>
+                <li>是否有浏览器扩展阻止了脚本执行</li>
+                <li>尝试刷新页面或清除浏览器缓存</li>
+            </ul>
+            <button class="btn" onclick="runDiagnostics()">运行诊断</button>
+        </div>
+    </div>
+
+    <script>
+        let monitoringInterval = null;
+        
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('monitor-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const icon = type === 'error' ? '❌' : type === 'warning' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️';
+            logElement.innerHTML += `[${timestamp}] ${icon} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearMonitorLog() {
+            document.getElementById('monitor-log').innerHTML = '日志已清除\n';
+        }
+
+        function startMonitoring() {
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+            }
+            
+            log('开始监控游戏加载状态...', 'info');
+            
+            // 检查关键文件是否可访问
+            const filesToCheck = [
+                '/static/js/game-bootstrap.js',
+                '/static/js/main.js',
+                '/static/css/style.css'
+            ];
+            
+            filesToCheck.forEach(file => {
+                fetch(file)
+                    .then(response => {
+                        if (response.ok) {
+                            log(`文件可访问: ${file}`, 'success');
+                        } else {
+                            log(`文件访问失败: ${file} (${response.status})`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        log(`文件检查错误: ${file} - ${error.message}`, 'error');
+                    });
+            });
+            
+            // 定期检查服务器状态
+            monitoringInterval = setInterval(() => {
+                fetch('/health')
+                    .then(response => response.json())
+                    .then(data => {
+                        log(`服务器状态: ${data.status}`, 'success');
+                    })
+                    .catch(error => {
+                        log(`服务器检查失败: ${error.message}`, 'error');
+                    });
+            }, 5000);
+        }
+
+        function stopMonitoring() {
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+                monitoringInterval = null;
+                log('监控已停止', 'info');
+            }
+        }
+
+        function runDiagnostics() {
+            log('开始运行诊断...', 'info');
+            
+            // 检查浏览器兼容性
+            const features = {
+                'ES6 Classes': typeof class {} === 'function',
+                'Fetch API': typeof fetch === 'function',
+                'Promise': typeof Promise === 'function',
+                'Canvas': !!document.createElement('canvas').getContext,
+                'Local Storage': typeof localStorage === 'object',
+                'WebSocket': typeof WebSocket === 'function'
+            };
+            
+            Object.entries(features).forEach(([feature, supported]) => {
+                log(`${feature}: ${supported ? '支持' : '不支持'}`, supported ? 'success' : 'error');
+            });
+            
+            // 检查网络连接
+            if (navigator.onLine) {
+                log('网络连接: 在线', 'success');
+            } else {
+                log('网络连接: 离线', 'warning');
+            }
+            
+            // 检查用户代理
+            log(`浏览器: ${navigator.userAgent}`, 'info');
+            
+            log('诊断完成', 'success');
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('调试页面加载完成', 'success');
+            log('游戏加载修复已实施', 'info');
+            log('准备测试游戏加载...', 'info');
+        });
+    </script>
+</body>
+</html>

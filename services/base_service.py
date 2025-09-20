@@ -29,6 +29,15 @@ class DatabaseError(Exception):
         super().__init__(message)
         self.original_error = original_error
         self.error_code = error_code or 'DB_ERROR'
+    
+    def to_dict(self):
+        """转换为字典格式"""
+        return {
+            'error_type': 'DatabaseError',
+            'message': str(self),
+            'error_code': self.error_code,
+            'original_error': str(self.original_error) if self.original_error else None
+        }
 
 
 class ValidationError(Exception):
@@ -37,6 +46,15 @@ class ValidationError(Exception):
         super().__init__(message)
         self.field = field
         self.value = value
+    
+    def to_dict(self):
+        """转换为字典格式"""
+        return {
+            'error_type': 'ValidationError',
+            'message': str(self),
+            'field': self.field,
+            'value': self.value
+        }
 
 
 def retry_on_database_error(max_retries: int = 3, delay: float = 0.1):
@@ -122,6 +140,9 @@ class BaseService(ABC):
                 original_error=e,
                 error_code='DB_SQLALCHEMY_ERROR'
             )
+        except ValidationError:
+            # ValidationError应该直接传播，不需要回滚
+            raise
         except Exception as e:
             self.db.session.rollback()
             self.logger.error(f"未知错误: {str(e)}")
@@ -256,19 +277,26 @@ class BaseService(ABC):
         Raises:
             ValidationError: 如果字符串无效
         """
+        # 处理None值
+        if value is None:
+            return ""
+        
         if not isinstance(value, str):
             raise ValidationError("输入必须是字符串类型")
         
         # 去除首尾空白
         cleaned = value.strip()
         
-        # 检查空字符串
-        if not cleaned and not allow_empty:
-            raise ValidationError("字符串不能为空")
+        # 检查空字符串 - 如果allow_empty为True或者原始值只是空白，则返回空字符串
+        if not cleaned:
+            if allow_empty or value.strip() == "":
+                return ""
+            else:
+                raise ValidationError("字符串不能为空")
         
-        # 检查长度
+        # 检查长度，如果超长则截断而不是抛出异常
         if max_length and len(cleaned) > max_length:
-            raise ValidationError(f"字符串长度不能超过 {max_length} 个字符")
+            cleaned = cleaned[:max_length]
         
         # 移除潜在的危险字符（基础清理）
         dangerous_chars = ['<', '>', '"', "'", '&', '\x00']

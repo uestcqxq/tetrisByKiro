@@ -6,9 +6,13 @@
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Optional, Tuple
 from sqlalchemy import func, desc, and_
+import logging
 from models.game_record import GameRecord
 from models.user import User
 from .base_service import BaseService, ValidationError, DatabaseError
+
+# 创建日志记录器
+logger = logging.getLogger(__name__)
 
 
 class GameService(BaseService):
@@ -203,7 +207,7 @@ class GameService(BaseService):
             return leaderboard
             
         except Exception as e:
-            print(f"获取排行榜失败: {str(e)}")
+            logger.error(f"获取排行榜失败: {str(e)}")
             return []
     
     def get_user_rank(self, user_id: str) -> Optional[Dict]:
@@ -252,7 +256,7 @@ class GameService(BaseService):
             }
             
         except Exception as e:
-            print(f"获取用户排名失败 (ID: {user_id}): {str(e)}")
+            logger.error(f"获取用户排名失败 (ID: {user_id}): {str(e)}")
             return None
     
     def get_user_best_score(self, user_id: str) -> int:
@@ -273,7 +277,7 @@ class GameService(BaseService):
             return best_score or 0
             
         except Exception as e:
-            print(f"获取用户最高得分失败 (ID: {user_id}): {str(e)}")
+            logger.error(f"获取用户最高得分失败 (ID: {user_id}): {str(e)}")
             return 0
     
     def get_user_game_history(self, user_id: str, limit: int = 10, 
@@ -297,7 +301,7 @@ class GameService(BaseService):
             ).offset(offset).limit(limit).all()
             
         except Exception as e:
-            print(f"获取用户游戏历史失败 (ID: {user_id}): {str(e)}")
+            logger.error(f"获取用户游戏历史失败 (ID: {user_id}): {str(e)}")
             return []
     
     def get_user_statistics(self, user_id: str) -> Dict:
@@ -383,7 +387,7 @@ class GameService(BaseService):
             }
             
         except Exception as e:
-            print(f"获取用户统计信息失败 (ID: {user_id}): {str(e)}")
+            logger.error(f"获取用户统计信息失败 (ID: {user_id}): {str(e)}")
             return {}
     
     def get_global_statistics(self) -> Dict:
@@ -436,7 +440,7 @@ class GameService(BaseService):
             }
             
         except Exception as e:
-            print(f"获取全局统计信息失败: {str(e)}")
+            logger.error(f"获取全局统计信息失败: {str(e)}")
             return {}
     
     def get_level_distribution(self) -> Dict[int, int]:
@@ -461,7 +465,7 @@ class GameService(BaseService):
             return distribution
             
         except Exception as e:
-            print(f"获取级别分布失败: {str(e)}")
+            logger.error(f"获取级别分布失败: {str(e)}")
             return {}
     
     def delete_user_games(self, user_id: str) -> bool:
@@ -475,13 +479,21 @@ class GameService(BaseService):
             bool: 删除是否成功
         """
         try:
-            deleted_count = GameRecord.query.filter_by(user_id=user_id).delete()
-            self.commit_transaction()
-            
-            print(f"删除了用户 {user_id} 的 {deleted_count} 条游戏记录")
-            return True
-            
+            with self.database_transaction():
+                # 验证用户存在
+                user = User.get_by_id(user_id)
+                if not user:
+                    raise ValidationError(f"用户 {user_id} 不存在", field='user_id', value=user_id)
+                
+                # 删除用户的所有游戏记录
+                deleted_count = GameRecord.query.filter_by(user_id=user_id).delete()
+                
+                logger.info(f"删除了用户 {user_id} 的 {deleted_count} 条游戏记录")
+                return True
+                
+        except ValidationError as e:
+            logger.warning(f"删除用户游戏记录验证失败 (ID: {user_id}): {str(e)}")
+            return False
         except Exception as e:
-            print(f"删除用户游戏记录失败 (ID: {user_id}): {str(e)}")
-            self.rollback_transaction()
+            logger.error(f"删除用户游戏记录失败 (ID: {user_id}): {str(e)}")
             return False

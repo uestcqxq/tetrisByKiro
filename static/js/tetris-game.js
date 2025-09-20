@@ -592,3 +592,7 @@ class TetrisGame {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = TetrisGame;
 }
+
+// 导出到全局作用域供浏览器使用
+window.TetrisGame = TetrisGame;
+console.log('TetrisGame 模块加载完成');

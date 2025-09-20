@@ -144,6 +144,129 @@ class UIManager {
     }
 
     /**
+     * 更新连击显示
+     * @param {number} combo - 连击数
+     */
+    updateCombo(combo) {
+        // 如果连击数大于1，显示连击效果
+        if (combo > 1) {
+            this.showComboAnimation(combo);
+        }
+    }
+
+    /**
+     * 显示连击动画
+     * @param {number} combo - 连击数
+     */
+    showComboAnimation(combo) {
+        const comboElement = document.createElement('div');
+        comboElement.className = 'combo-animation';
+        comboElement.textContent = `COMBO x${combo}!`;
+        comboElement.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff6b35;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 1000;
+            animation: comboFade 2s ease-out forwards;
+            pointer-events: none;
+        `;
+
+        // 添加CSS动画
+        if (!document.getElementById('combo-animation-style')) {
+            const style = document.createElement('style');
+            style.id = 'combo-animation-style';
+            style.textContent = `
+                @keyframes comboFade {
+                    0% {
+                        opacity: 1;
+                        transform: translate(-50%, -50%) scale(1.2);
+                    }
+                    50% {
+                        opacity: 1;
+                        transform: translate(-50%, -50%) scale(1);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: translate(-50%, -50%) scale(0.8);
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        document.body.appendChild(comboElement);
+
+        // 自动清理
+        setTimeout(() => {
+            if (comboElement.parentNode) {
+                comboElement.parentNode.removeChild(comboElement);
+            }
+        }, 2000);
+    }
+
+    /**
+     * 显示升级详情
+     * @param {object} details - 升级详情对象
+     */
+    showLevelUpDetails(details) {
+        console.log('Level up details:', details);
+        // 可以在这里添加更详细的升级显示逻辑
+        this.animateLevelUp(details.newLevel);
+    }
+
+    /**
+     * 更新难度指示器
+     * @param {object} difficultyInfo - 难度信息
+     */
+    updateDifficultyIndicator(difficultyInfo) {
+        console.log('Difficulty info:', difficultyInfo);
+        // 可以在这里添加难度指示器的更新逻辑
+    }
+
+    /**
+     * 更新级别进度
+     * @param {object} progress - 进度信息
+     */
+    updateLevelProgress(progress) {
+        const progressElement = document.getElementById('level-progress');
+        if (progressElement && progress) {
+            const percentage = (progress.current / progress.target) * 100;
+            progressElement.style.width = `${Math.min(percentage, 100)}%`;
+        }
+    }
+
+    /**
+     * 显示游戏统计
+     * @param {object} stats - 游戏统计信息
+     */
+    showGameStats(stats) {
+        console.log('Game stats:', stats);
+        this.showGameOver(stats, false);
+    }
+
+    /**
+     * 清理UI元素
+     */
+    cleanup() {
+        // 清除所有动画
+        this.activeAnimations.clear();
+        
+        // 清除动画容器中的元素
+        if (this.elements.animationContainer) {
+            this.elements.animationContainer.innerHTML = '';
+        }
+        
+        // 隐藏游戏结束相关元素
+        this.hideGameOverElements();
+        this.hideGamePaused();
+    }
+
+    /**
      * 格式化数字显示
      * @param {number} number - 要格式化的数字
      * @returns {string} 格式化后的字符串
@@ -176,6 +299,56 @@ class UIManager {
                 this.elements.score.classList.remove('score-increase');
             }, 500);
         }
+    }
+
+    /**
+     * 显示得分动画
+     * @param {object} animation - 动画配置对象
+     */
+    showScoreAnimation(animation) {
+        if (!animation) return;
+        
+        const { type, value, position, duration = 1000 } = animation;
+        
+        // 创建动画元素
+        const animationElement = document.createElement('div');
+        animationElement.className = `score-animation ${type}`;
+        animationElement.textContent = `+${value}`;
+        
+        // 设置样式
+        animationElement.style.cssText = `
+            position: absolute;
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 18px;
+            pointer-events: none;
+            z-index: 1000;
+            animation: scoreFloat ${duration}ms ease-out forwards;
+        `;
+        
+        // 设置位置
+        if (position) {
+            animationElement.style.left = `${position.x}px`;
+            animationElement.style.top = `${position.y}px`;
+        } else {
+            // 默认位置在得分显示附近
+            const scoreElement = this.elements.score;
+            if (scoreElement) {
+                const rect = scoreElement.getBoundingClientRect();
+                animationElement.style.left = `${rect.right + 10}px`;
+                animationElement.style.top = `${rect.top}px`;
+            }
+        }
+        
+        // 添加到页面
+        document.body.appendChild(animationElement);
+        
+        // 自动清理
+        setTimeout(() => {
+            if (animationElement.parentNode) {
+                animationElement.parentNode.removeChild(animationElement);
+            }
+        }, duration);
     }
 
     /**
@@ -723,10 +896,36 @@ class UIManager {
      */
     notifyGameFinished(gameData) {
         if (window.wsClient && window.wsClient.isConnected) {
-            window.wsClient.sendGameFinished(gameData);
+            // 仅发送轻量级的游戏结束通知，不包含完整得分数据
+            window.wsClient.sendGameFinished({ user_id: gameData.user_id, game_over: true });
         }
     }
     
+    /**
+     * 更新难度指示器
+     * @param {object} difficultyInfo - 难度信息对象
+     */
+    updateDifficultyIndicator(difficultyInfo) {
+        if (!difficultyInfo) return;
+        
+        const { level, rating, dropSpeed, description } = difficultyInfo;
+        
+        // 更新难度显示元素
+        const difficultyElement = document.getElementById('difficulty-indicator');
+        if (difficultyElement) {
+            difficultyElement.textContent = `难度: ${rating} (${description})`;
+            difficultyElement.className = `difficulty-indicator difficulty-${rating.toLowerCase()}`;
+        }
+        
+        // 更新速度显示
+        const speedElement = document.getElementById('drop-speed');
+        if (speedElement) {
+            speedElement.textContent = `速度: ${Math.round(1000 / dropSpeed * 100) / 100}`;
+        }
+        
+        console.log(`难度更新: 级别 ${level}, 评级 ${rating}, 速度 ${dropSpeed}ms`);
+    }
+
     /**
      * 清理UI状态
      */

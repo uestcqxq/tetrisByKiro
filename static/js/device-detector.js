@@ -1,177 +1,238 @@
 /**
- * 设备性能检测器 - 检测设备性能并自动调整游戏设置
- * 根据设备能力优化游戏性能和用户体验
+ * 简化设备性能检测器
+ * 快速确定设备性能等级并提供自动配置调整
  */
 class DeviceDetector {
     constructor() {
+        this.performanceLevel = 'medium'; // low, medium, high
         this.deviceInfo = {
-            // 基本信息
-            userAgent: navigator.userAgent,
-            platform: navigator.platform,
-            language: navigator.language,
-            
-            // 屏幕信息
-            screenWidth: screen.width,
-            screenHeight: screen.height,
-            pixelRatio: window.devicePixelRatio || 1,
-            
-            // 性能相关
-            hardwareConcurrency: navigator.hardwareConcurrency || 4,
-            memory: navigator.deviceMemory || 4,
-            connection: null,
-            
-            // 功能支持
-            webGL: false,
-            webGL2: false,
-            offscreenCanvas: false,
-            webWorkers: false,
-            touchSupport: false,
-            
-            // 设备类型
             isMobile: false,
             isTablet: false,
             isDesktop: false,
-            
-            // 性能等级
-            performanceLevel: 'medium'
+            hasTouch: false,
+            screenSize: 'medium',
+            memoryLevel: 'medium',
+            cpuLevel: 'medium',
+            gpuLevel: 'medium'
         };
-
-        this.performanceTests = {
-            canvasRenderTest: null,
-            memoryTest: null,
-            computeTest: null,
-            networkTest: null
+        
+        this.detectionResults = {
+            completed: false,
+            detectionTime: 0,
+            confidence: 0,
+            fallbackUsed: false
         };
-
-        this.optimizedSettings = {
-            graphics: {},
-            audio: {},
-            network: {},
-            ui: {}
+        
+        // 性能配置映射
+        this.performanceConfigs = {
+            low: {
+                enableAnimations: false,
+                maxAnimations: 0,
+                targetFPS: 30,
+                enableGradients: false,
+                enableShadows: false,
+                enableParticles: false,
+                renderQuality: 'low',
+                audioChannels: 1,
+                preloadAssets: false
+            },
+            medium: {
+                enableAnimations: true,
+                maxAnimations: 5,
+                targetFPS: 45,
+                enableGradients: true,
+                enableShadows: false,
+                enableParticles: true,
+                renderQuality: 'medium',
+                audioChannels: 2,
+                preloadAssets: true
+            },
+            high: {
+                enableAnimations: true,
+                maxAnimations: 10,
+                targetFPS: 60,
+                enableGradients: true,
+                enableShadows: true,
+                enableParticles: true,
+                renderQuality: 'high',
+                audioChannels: 4,
+                preloadAssets: true
+            }
         };
-
-        this.initialize();
+        
+        // 检测超时时间（毫秒）
+        this.detectionTimeout = 2000;
     }
 
     /**
      * 初始化设备检测
      */
     async initialize() {
-        console.log('开始设备性能检测...');
+        const startTime = performance.now();
         
-        await this.detectBasicInfo();
-        await this.detectCapabilities();
-        await this.runPerformanceTests();
-        await this.determinePerformanceLevel();
-        await this.generateOptimizedSettings();
-        
-        console.log('设备检测完成:', this.deviceInfo);
-        console.log('优化设置:', this.optimizedSettings);
+        try {
+            console.log('开始设备性能检测...');
+            
+            // 快速基础检测
+            await this.performBasicDetection();
+            
+            // 性能基准测试（简化版）
+            await this.performSimpleBenchmark();
+            
+            // 确定性能等级
+            this.determinePerformanceLevel();
+            
+            // 生成配置
+            const config = this.generateConfiguration();
+            
+            this.detectionResults.completed = true;
+            this.detectionResults.detectionTime = performance.now() - startTime;
+            this.detectionResults.confidence = this.calculateConfidence();
+            
+            console.log(`设备检测完成 - 性能等级: ${this.performanceLevel}, 耗时: ${Math.round(this.detectionResults.detectionTime)}ms`);
+            
+            return {
+                performanceLevel: this.performanceLevel,
+                deviceInfo: this.deviceInfo,
+                config: config,
+                results: this.detectionResults
+            };
+            
+        } catch (error) {
+            console.warn('设备检测失败，使用默认配置:', error);
+            return this.getFallbackConfiguration();
+        }
     }
 
     /**
-     * 检测基本设备信息
+     * 执行基础设备检测
      */
-    async detectBasicInfo() {
+    async performBasicDetection() {
         // 检测设备类型
         this.detectDeviceType();
         
-        // 检测网络连接
-        this.detectNetworkInfo();
+        // 检测屏幕信息
+        this.detectScreenInfo();
+        
+        // 检测内存信息
+        this.detectMemoryInfo();
         
         // 检测触摸支持
-        this.deviceInfo.touchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        this.detectTouchSupport();
         
-        // 检测方向支持
-        this.deviceInfo.orientationSupport = 'orientation' in window;
-        
-        // 检测电池信息（如果可用）
-        if ('getBattery' in navigator) {
-            try {
-                const battery = await navigator.getBattery();
-                this.deviceInfo.battery = {
-                    charging: battery.charging,
-                    level: battery.level
-                };
-            } catch (error) {
-                console.warn('无法获取电池信息:', error);
-            }
-        }
+        // 检测浏览器性能API支持
+        this.detectBrowserCapabilities();
     }
 
     /**
      * 检测设备类型
      */
     detectDeviceType() {
-        const ua = navigator.userAgent.toLowerCase();
-        const screenWidth = Math.min(screen.width, screen.height);
+        const userAgent = navigator.userAgent.toLowerCase();
         
         // 移动设备检测
-        if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua)) {
-            if (/ipad|android(?!.*mobile)/i.test(ua) || screenWidth >= 768) {
-                this.deviceInfo.isTablet = true;
-            } else {
-                this.deviceInfo.isMobile = true;
-            }
+        this.deviceInfo.isMobile = /android|webos|iphone|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+        
+        // 平板检测
+        this.deviceInfo.isTablet = /ipad|android(?!.*mobile)|tablet/i.test(userAgent) || 
+                                  (this.deviceInfo.isMobile && window.innerWidth > 768);
+        
+        // 桌面设备
+        this.deviceInfo.isDesktop = !this.deviceInfo.isMobile && !this.deviceInfo.isTablet;
+        
+        console.log('设备类型检测:', {
+            mobile: this.deviceInfo.isMobile,
+            tablet: this.deviceInfo.isTablet,
+            desktop: this.deviceInfo.isDesktop
+        });
+    }
+
+    /**
+     * 检测屏幕信息
+     */
+    detectScreenInfo() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const pixelRatio = window.devicePixelRatio || 1;
+        
+        // 屏幕尺寸分类
+        if (width <= 480) {
+            this.deviceInfo.screenSize = 'small';
+        } else if (width <= 1024) {
+            this.deviceInfo.screenSize = 'medium';
         } else {
-            this.deviceInfo.isDesktop = true;
+            this.deviceInfo.screenSize = 'large';
         }
+        
+        // 高分辨率屏幕检测
+        this.deviceInfo.isHighDPI = pixelRatio > 1.5;
+        this.deviceInfo.screenResolution = { width, height, pixelRatio };
+        
+        console.log('屏幕信息:', {
+            size: this.deviceInfo.screenSize,
+            resolution: `${width}x${height}`,
+            pixelRatio: pixelRatio,
+            highDPI: this.deviceInfo.isHighDPI
+        });
+    }
 
-        // 具体设备识别
-        if (/iphone/i.test(ua)) {
-            this.deviceInfo.device = 'iPhone';
-        } else if (/ipad/i.test(ua)) {
-            this.deviceInfo.device = 'iPad';
-        } else if (/android/i.test(ua)) {
-            this.deviceInfo.device = 'Android';
-        } else if (/windows/i.test(ua)) {
-            this.deviceInfo.device = 'Windows';
-        } else if (/mac/i.test(ua)) {
-            this.deviceInfo.device = 'Mac';
-        } else if (/linux/i.test(ua)) {
-            this.deviceInfo.device = 'Linux';
+    /**
+     * 检测内存信息
+     */
+    detectMemoryInfo() {
+        try {
+            // 尝试获取设备内存信息（Chrome支持）
+            if (navigator.deviceMemory) {
+                const memory = navigator.deviceMemory;
+                if (memory <= 2) {
+                    this.deviceInfo.memoryLevel = 'low';
+                } else if (memory <= 4) {
+                    this.deviceInfo.memoryLevel = 'medium';
+                } else {
+                    this.deviceInfo.memoryLevel = 'high';
+                }
+                console.log(`设备内存: ${memory}GB, 等级: ${this.deviceInfo.memoryLevel}`);
+            } else {
+                // 基于设备类型推测
+                if (this.deviceInfo.isMobile) {
+                    this.deviceInfo.memoryLevel = 'low';
+                } else if (this.deviceInfo.isTablet) {
+                    this.deviceInfo.memoryLevel = 'medium';
+                } else {
+                    this.deviceInfo.memoryLevel = 'medium';
+                }
+                console.log('内存信息不可用，基于设备类型推测:', this.deviceInfo.memoryLevel);
+            }
+        } catch (error) {
+            console.warn('内存检测失败:', error);
+            this.deviceInfo.memoryLevel = 'medium';
         }
     }
 
     /**
-     * 检测网络信息
+     * 检测触摸支持
      */
-    detectNetworkInfo() {
-        if ('connection' in navigator) {
-            const connection = navigator.connection;
-            this.deviceInfo.connection = {
-                effectiveType: connection.effectiveType,
-                downlink: connection.downlink,
-                rtt: connection.rtt,
-                saveData: connection.saveData
-            };
-        }
+    detectTouchSupport() {
+        this.deviceInfo.hasTouch = 'ontouchstart' in window || 
+                                  navigator.maxTouchPoints > 0 || 
+                                  navigator.msMaxTouchPoints > 0;
+        
+        console.log('触摸支持:', this.deviceInfo.hasTouch);
     }
 
     /**
-     * 检测设备能力
+     * 检测浏览器性能能力
      */
-    async detectCapabilities() {
-        // WebGL支持检测
-        this.detectWebGLSupport();
+    detectBrowserCapabilities() {
+        this.deviceInfo.capabilities = {
+            webGL: this.detectWebGLSupport(),
+            canvas: this.detectCanvasSupport(),
+            webWorkers: typeof Worker !== 'undefined',
+            requestAnimationFrame: typeof requestAnimationFrame !== 'undefined',
+            performanceAPI: typeof performance !== 'undefined' && typeof performance.now !== 'undefined'
+        };
         
-        // OffscreenCanvas支持
-        this.deviceInfo.offscreenCanvas = 'OffscreenCanvas' in window;
-        
-        // Web Workers支持
-        this.deviceInfo.webWorkers = 'Worker' in window;
-        
-        // WebAssembly支持
-        this.deviceInfo.webAssembly = 'WebAssembly' in window;
-        
-        // 音频支持
-        this.detectAudioSupport();
-        
-        // 存储支持
-        this.detectStorageSupport();
-        
-        // 其他API支持
-        this.detectOtherAPIs();
+        console.log('浏览器能力:', this.deviceInfo.capabilities);
     }
 
     /**
@@ -181,608 +242,337 @@ class DeviceDetector {
         try {
             const canvas = document.createElement('canvas');
             const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-            this.deviceInfo.webGL = !!gl;
-            
-            if (gl) {
-                const gl2 = canvas.getContext('webgl2');
-                this.deviceInfo.webGL2 = !!gl2;
-                
-                // 获取WebGL信息
-                this.deviceInfo.webGLInfo = {
-                    vendor: gl.getParameter(gl.VENDOR),
-                    renderer: gl.getParameter(gl.RENDERER),
-                    version: gl.getParameter(gl.VERSION),
-                    maxTextureSize: gl.getParameter(gl.MAX_TEXTURE_SIZE),
-                    maxViewportDims: gl.getParameter(gl.MAX_VIEWPORT_DIMS)
-                };
-            }
+            return !!gl;
         } catch (error) {
-            console.warn('WebGL检测失败:', error);
-            this.deviceInfo.webGL = false;
-            this.deviceInfo.webGL2 = false;
+            return false;
         }
     }
 
     /**
-     * 检测音频支持
+     * 检测Canvas支持
      */
-    detectAudioSupport() {
-        const audio = document.createElement('audio');
-        this.deviceInfo.audioSupport = {
-            mp3: !!audio.canPlayType('audio/mpeg'),
-            ogg: !!audio.canPlayType('audio/ogg'),
-            wav: !!audio.canPlayType('audio/wav'),
-            webAudio: 'AudioContext' in window || 'webkitAudioContext' in window
-        };
-    }
-
-    /**
-     * 检测存储支持
-     */
-    detectStorageSupport() {
-        this.deviceInfo.storageSupport = {
-            localStorage: 'localStorage' in window,
-            sessionStorage: 'sessionStorage' in window,
-            indexedDB: 'indexedDB' in window,
-            webSQL: 'openDatabase' in window
-        };
-    }
-
-    /**
-     * 检测其他API支持
-     */
-    detectOtherAPIs() {
-        this.deviceInfo.apiSupport = {
-            requestAnimationFrame: 'requestAnimationFrame' in window,
-            fullscreen: 'requestFullscreen' in document.documentElement,
-            vibration: 'vibrate' in navigator,
-            geolocation: 'geolocation' in navigator,
-            deviceOrientation: 'DeviceOrientationEvent' in window,
-            deviceMotion: 'DeviceMotionEvent' in window
-        };
-    }
-
-    /**
-     * 运行性能测试
-     */
-    async runPerformanceTests() {
-        console.log('开始性能测试...');
-        
-        // Canvas渲染性能测试
-        this.performanceTests.canvasRenderTest = await this.testCanvasPerformance();
-        
-        // 内存性能测试
-        this.performanceTests.memoryTest = await this.testMemoryPerformance();
-        
-        // 计算性能测试
-        this.performanceTests.computeTest = await this.testComputePerformance();
-        
-        // 网络性能测试
-        this.performanceTests.networkTest = await this.testNetworkPerformance();
-        
-        console.log('性能测试完成:', this.performanceTests);
-    }
-
-    /**
-     * Canvas渲染性能测试
-     */
-    async testCanvasPerformance() {
-        return new Promise((resolve) => {
+    detectCanvasSupport() {
+        try {
             const canvas = document.createElement('canvas');
-            canvas.width = 300;
-            canvas.height = 600;
-            const ctx = canvas.getContext('2d');
-            
-            const startTime = performance.now();
-            let frameCount = 0;
-            const testDuration = 1000; // 1秒测试
-            
-            const renderTest = () => {
-                // 模拟游戏渲染
-                ctx.fillStyle = '#000';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            return !!(canvas.getContext && canvas.getContext('2d'));
+        } catch (error) {
+            return false;
+        }
+    }
+
+    /**
+     * 执行简化的性能基准测试
+     */
+    async performSimpleBenchmark() {
+        return new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                console.warn('性能测试超时，使用默认评估');
+                this.deviceInfo.cpuLevel = 'medium';
+                this.deviceInfo.gpuLevel = 'medium';
+                resolve();
+            }, this.detectionTimeout);
+
+            try {
+                // CPU性能测试（简化版）
+                const cpuScore = this.testCPUPerformance();
                 
-                // 绘制网格
-                ctx.strokeStyle = '#333';
-                ctx.lineWidth = 1;
-                for (let x = 0; x < canvas.width; x += 30) {
-                    ctx.beginPath();
-                    ctx.moveTo(x, 0);
-                    ctx.lineTo(x, canvas.height);
-                    ctx.stroke();
-                }
-                for (let y = 0; y < canvas.height; y += 30) {
-                    ctx.beginPath();
-                    ctx.moveTo(0, y);
-                    ctx.lineTo(canvas.width, y);
-                    ctx.stroke();
-                }
+                // GPU性能测试（简化版）
+                const gpuScore = this.testGPUPerformance();
                 
-                // 绘制一些方块
-                for (let i = 0; i < 50; i++) {
-                    ctx.fillStyle = `hsl(${i * 7}, 70%, 50%)`;
-                    ctx.fillRect(
-                        Math.random() * canvas.width,
-                        Math.random() * canvas.height,
-                        30, 30
-                    );
-                }
+                // 评估性能等级
+                this.deviceInfo.cpuLevel = this.evaluatePerformanceLevel(cpuScore, [100, 300]);
+                this.deviceInfo.gpuLevel = this.evaluatePerformanceLevel(gpuScore, [50, 150]);
                 
-                frameCount++;
+                clearTimeout(timeout);
+                resolve();
                 
-                if (performance.now() - startTime < testDuration) {
-                    requestAnimationFrame(renderTest);
-                } else {
-                    const fps = frameCount / (testDuration / 1000);
-                    resolve({
-                        fps,
-                        frameCount,
-                        duration: testDuration,
-                        score: Math.min(fps / 60, 1) // 标准化到0-1
-                    });
-                }
-            };
-            
-            requestAnimationFrame(renderTest);
+            } catch (error) {
+                console.warn('性能测试失败:', error);
+                this.deviceInfo.cpuLevel = 'medium';
+                this.deviceInfo.gpuLevel = 'medium';
+                clearTimeout(timeout);
+                resolve();
+            }
         });
     }
 
     /**
-     * 内存性能测试
+     * CPU性能测试
      */
-    async testMemoryPerformance() {
-        const startMemory = performance.memory ? performance.memory.usedJSHeapSize : 0;
-        
-        // 创建大量对象测试内存分配
-        const objects = [];
+    testCPUPerformance() {
         const startTime = performance.now();
         
+        // 简单的计算密集型任务
+        let result = 0;
+        for (let i = 0; i < 100000; i++) {
+            result += Math.sqrt(i) * Math.sin(i);
+        }
+        
+        const endTime = performance.now();
+        const executionTime = endTime - startTime;
+        
+        // 分数越高表示性能越好（执行时间越短）
+        const score = Math.max(1, 1000 / executionTime);
+        
+        console.log(`CPU测试: ${Math.round(executionTime)}ms, 分数: ${Math.round(score)}`);
+        return score;
+    }
+
+    /**
+     * GPU性能测试（Canvas渲染）
+     */
+    testGPUPerformance() {
         try {
-            for (let i = 0; i < 10000; i++) {
-                objects.push({
-                    id: i,
-                    data: new Array(100).fill(Math.random()),
-                    timestamp: Date.now()
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+            
+            const startTime = performance.now();
+            
+            // 简单的渲染测试
+            for (let i = 0; i < 1000; i++) {
+                ctx.fillStyle = `hsl(${i % 360}, 50%, 50%)`;
+                ctx.fillRect(i % 200, (i * 2) % 200, 10, 10);
+            }
+            
+            const endTime = performance.now();
+            const executionTime = endTime - startTime;
+            
+            // 分数越高表示性能越好
+            const score = Math.max(1, 500 / executionTime);
+            
+            console.log(`GPU测试: ${Math.round(executionTime)}ms, 分数: ${Math.round(score)}`);
+            return score;
+            
+        } catch (error) {
+            console.warn('GPU测试失败:', error);
+            return 50; // 默认中等分数
+        }
+    }
+
+    /**
+     * 评估性能等级
+     */
+    evaluatePerformanceLevel(score, thresholds) {
+        if (score < thresholds[0]) {
+            return 'low';
+        } else if (score < thresholds[1]) {
+            return 'medium';
+        } else {
+            return 'high';
+        }
+    }
+
+    /**
+     * 确定整体性能等级
+     */
+    determinePerformanceLevel() {
+        const factors = [];
+        
+        // 设备类型权重
+        if (this.deviceInfo.isMobile) {
+            factors.push('low');
+        } else if (this.deviceInfo.isTablet) {
+            factors.push('medium');
+        } else {
+            factors.push('high');
+        }
+        
+        // 内存等级
+        factors.push(this.deviceInfo.memoryLevel);
+        
+        // CPU等级
+        factors.push(this.deviceInfo.cpuLevel);
+        
+        // GPU等级
+        factors.push(this.deviceInfo.gpuLevel);
+        
+        // 屏幕尺寸影响
+        if (this.deviceInfo.screenSize === 'small') {
+            factors.push('low');
+        } else if (this.deviceInfo.screenSize === 'large') {
+            factors.push('high');
+        }
+        
+        // 计算平均等级
+        const levelScores = factors.map(level => {
+            switch (level) {
+                case 'low': return 1;
+                case 'medium': return 2;
+                case 'high': return 3;
+                default: return 2;
+            }
+        });
+        
+        const averageScore = levelScores.reduce((sum, score) => sum + score, 0) / levelScores.length;
+        
+        // 确定最终等级
+        if (averageScore <= 1.5) {
+            this.performanceLevel = 'low';
+        } else if (averageScore <= 2.5) {
+            this.performanceLevel = 'medium';
+        } else {
+            this.performanceLevel = 'high';
+        }
+        
+        console.log('性能等级评估:', {
+            factors: factors,
+            averageScore: averageScore.toFixed(2),
+            finalLevel: this.performanceLevel
+        });
+    }
+
+    /**
+     * 生成基于性能等级的配置
+     */
+    generateConfiguration() {
+        const baseConfig = { ...this.performanceConfigs[this.performanceLevel] };
+        
+        // 根据具体设备特性调整配置
+        if (this.deviceInfo.isMobile) {
+            // 移动设备特殊优化
+            baseConfig.enableAnimations = baseConfig.enableAnimations && this.performanceLevel !== 'low';
+            baseConfig.maxAnimations = Math.min(baseConfig.maxAnimations, 3);
+            baseConfig.targetFPS = Math.min(baseConfig.targetFPS, 45);
+        }
+        
+        if (this.deviceInfo.screenSize === 'small') {
+            // 小屏幕优化
+            baseConfig.renderQuality = 'low';
+            baseConfig.enableShadows = false;
+        }
+        
+        if (!this.deviceInfo.capabilities.webGL) {
+            // 无WebGL支持时的降级
+            baseConfig.renderQuality = 'low';
+            baseConfig.enableGradients = false;
+        }
+        
+        if (this.deviceInfo.hasTouch) {
+            // 触摸设备优化
+            baseConfig.touchOptimized = true;
+            baseConfig.buttonSize = 'large';
+        }
+        
+        console.log('生成的配置:', baseConfig);
+        return baseConfig;
+    }
+
+    /**
+     * 计算检测置信度
+     */
+    calculateConfidence() {
+        let confidence = 0.5; // 基础置信度
+        
+        // 有设备内存信息
+        if (navigator.deviceMemory) {
+            confidence += 0.2;
+        }
+        
+        // 性能测试完成
+        if (this.deviceInfo.cpuLevel && this.deviceInfo.gpuLevel) {
+            confidence += 0.2;
+        }
+        
+        // 浏览器能力检测完整
+        if (this.deviceInfo.capabilities) {
+            confidence += 0.1;
+        }
+        
+        return Math.min(confidence, 1.0);
+    }
+
+    /**
+     * 获取回退配置（检测失败时使用）
+     */
+    getFallbackConfiguration() {
+        console.log('使用回退配置');
+        
+        this.detectionResults.fallbackUsed = true;
+        this.performanceLevel = 'medium';
+        
+        // 基于用户代理的简单判断
+        const userAgent = navigator.userAgent.toLowerCase();
+        if (/android|webos|iphone|ipod|blackberry|iemobile|opera mini/i.test(userAgent)) {
+            this.performanceLevel = 'low';
+        }
+        
+        const config = { ...this.performanceConfigs[this.performanceLevel] };
+        
+        return {
+            performanceLevel: this.performanceLevel,
+            deviceInfo: {
+                isMobile: /android|webos|iphone|ipod|blackberry|iemobile|opera mini/i.test(userAgent),
+                isTablet: false,
+                isDesktop: true,
+                hasTouch: 'ontouchstart' in window,
+                screenSize: window.innerWidth <= 768 ? 'small' : 'medium',
+                memoryLevel: 'medium',
+                cpuLevel: 'medium',
+                gpuLevel: 'medium'
+            },
+            config: config,
+            results: {
+                completed: false,
+                detectionTime: 0,
+                confidence: 0.3,
+                fallbackUsed: true
+            }
+        };
+    }
+
+    /**
+     * 获取设备信息摘要
+     */
+    getDeviceSummary() {
+        return {
+            type: this.deviceInfo.isMobile ? 'Mobile' : 
+                  this.deviceInfo.isTablet ? 'Tablet' : 'Desktop',
+            performance: this.performanceLevel,
+            screen: this.deviceInfo.screenSize,
+            memory: this.deviceInfo.memoryLevel,
+            touch: this.deviceInfo.hasTouch,
+            confidence: Math.round(this.detectionResults.confidence * 100) + '%'
+        };
+    }
+
+    /**
+     * 应用配置到游戏
+     */
+    applyConfigurationToGame(config) {
+        try {
+            // 更新全局游戏配置
+            if (window.GAME_CONFIG) {
+                window.GAME_CONFIG.ENABLE_ANIMATIONS = config.enableAnimations;
+                window.GAME_CONFIG.MAX_ANIMATIONS = config.maxAnimations;
+                window.GAME_CONFIG.TARGET_FPS = config.targetFPS;
+                window.GAME_CONFIG.RENDER_QUALITY = config.renderQuality;
+            }
+            
+            // 更新颜色主题配置
+            if (window.COLOR_THEMES && !config.enableGradients) {
+                Object.values(window.COLOR_THEMES).forEach(theme => {
+                    theme.useSimpleColors = true;
                 });
             }
             
-            const allocationTime = performance.now() - startTime;
-            const endMemory = performance.memory ? performance.memory.usedJSHeapSize : 0;
-            const memoryUsed = endMemory - startMemory;
-            
-            // 清理对象
-            objects.length = 0;
-            
-            return {
-                allocationTime,
-                memoryUsed,
-                objectCount: 10000,
-                score: Math.max(0, 1 - (allocationTime / 1000)) // 越快越好
-            };
-        } catch (error) {
-            return {
-                error: error.message,
-                score: 0.5
-            };
-        }
-    }
-
-    /**
-     * 计算性能测试
-     */
-    async testComputePerformance() {
-        const startTime = performance.now();
-        
-        // 执行一些计算密集型操作
-        let result = 0;
-        for (let i = 0; i < 1000000; i++) {
-            result += Math.sin(i) * Math.cos(i) * Math.sqrt(i);
-        }
-        
-        const computeTime = performance.now() - startTime;
-        
-        return {
-            computeTime,
-            operations: 1000000,
-            result,
-            score: Math.max(0, 1 - (computeTime / 1000))
-        };
-    }
-
-    /**
-     * 网络性能测试
-     */
-    async testNetworkPerformance() {
-        if (!navigator.onLine) {
-            return { offline: true, score: 0 };
-        }
-        
-        try {
-            const startTime = performance.now();
-            
-            // 测试小文件下载速度
-            const response = await fetch('/static/images/favicon.ico?' + Date.now(), {
-                cache: 'no-cache'
-            });
-            
-            if (response.ok) {
-                await response.blob();
-                const loadTime = performance.now() - startTime;
-                
-                return {
-                    loadTime,
-                    score: Math.max(0, 1 - (loadTime / 1000))
-                };
-            } else {
-                return { error: 'Network test failed', score: 0.5 };
+            // 应用移动设备优化
+            if (config.touchOptimized) {
+                document.body.classList.add('touch-optimized');
             }
+            
+            console.log('配置已应用到游戏');
+            return true;
+            
         } catch (error) {
-            return { error: error.message, score: 0.3 };
+            console.error('应用配置失败:', error);
+            return false;
         }
-    }
-
-    /**
-     * 确定性能等级
-     */
-    async determinePerformanceLevel() {
-        const scores = {
-            canvas: this.performanceTests.canvasRenderTest?.score || 0.5,
-            memory: this.performanceTests.memoryTest?.score || 0.5,
-            compute: this.performanceTests.computeTest?.score || 0.5,
-            network: this.performanceTests.networkTest?.score || 0.5
-        };
-        
-        // 设备特征权重
-        let deviceScore = 0.5;
-        
-        if (this.deviceInfo.isDesktop) {
-            deviceScore += 0.2;
-        } else if (this.deviceInfo.isTablet) {
-            deviceScore += 0.1;
-        }
-        
-        if (this.deviceInfo.hardwareConcurrency >= 8) {
-            deviceScore += 0.1;
-        } else if (this.deviceInfo.hardwareConcurrency >= 4) {
-            deviceScore += 0.05;
-        }
-        
-        if (this.deviceInfo.memory >= 8) {
-            deviceScore += 0.1;
-        } else if (this.deviceInfo.memory >= 4) {
-            deviceScore += 0.05;
-        }
-        
-        if (this.deviceInfo.webGL2) {
-            deviceScore += 0.1;
-        } else if (this.deviceInfo.webGL) {
-            deviceScore += 0.05;
-        }
-        
-        // 计算综合得分
-        const totalScore = (
-            scores.canvas * 0.4 +
-            scores.memory * 0.2 +
-            scores.compute * 0.2 +
-            scores.network * 0.1 +
-            deviceScore * 0.1
-        );
-        
-        // 确定性能等级
-        if (totalScore >= 0.8) {
-            this.deviceInfo.performanceLevel = 'high';
-        } else if (totalScore >= 0.6) {
-            this.deviceInfo.performanceLevel = 'medium';
-        } else if (totalScore >= 0.4) {
-            this.deviceInfo.performanceLevel = 'low';
-        } else {
-            this.deviceInfo.performanceLevel = 'very_low';
-        }
-        
-        this.deviceInfo.performanceScore = totalScore;
-    }
-
-    /**
-     * 生成优化设置
-     */
-    async generateOptimizedSettings() {
-        const level = this.deviceInfo.performanceLevel;
-        
-        // 图形设置
-        this.optimizedSettings.graphics = this.getGraphicsSettings(level);
-        
-        // 音频设置
-        this.optimizedSettings.audio = this.getAudioSettings(level);
-        
-        // 网络设置
-        this.optimizedSettings.network = this.getNetworkSettings(level);
-        
-        // UI设置
-        this.optimizedSettings.ui = this.getUISettings(level);
-        
-        // 游戏设置
-        this.optimizedSettings.game = this.getGameSettings(level);
-    }
-
-    /**
-     * 获取图形设置
-     */
-    getGraphicsSettings(level) {
-        const settings = {
-            enableAnimations: true,
-            maxAnimations: 10,
-            enableParticles: true,
-            enableShadows: true,
-            enableGradients: true,
-            targetFPS: 60,
-            enableVSync: true,
-            canvasOptimization: true
-        };
-
-        switch (level) {
-            case 'very_low':
-                settings.enableAnimations = false;
-                settings.maxAnimations = 2;
-                settings.enableParticles = false;
-                settings.enableShadows = false;
-                settings.enableGradients = false;
-                settings.targetFPS = 30;
-                settings.enableVSync = false;
-                break;
-                
-            case 'low':
-                settings.maxAnimations = 5;
-                settings.enableParticles = false;
-                settings.enableShadows = false;
-                settings.targetFPS = 45;
-                break;
-                
-            case 'medium':
-                settings.maxAnimations = 8;
-                settings.enableParticles = true;
-                settings.enableShadows = true;
-                break;
-                
-            case 'high':
-                settings.maxAnimations = 15;
-                settings.enableParticles = true;
-                settings.enableShadows = true;
-                settings.enableGradients = true;
-                break;
-        }
-
-        return settings;
-    }
-
-    /**
-     * 获取音频设置
-     */
-    getAudioSettings(level) {
-        const settings = {
-            enableAudio: true,
-            enableMusic: true,
-            enableSoundEffects: true,
-            audioQuality: 'medium',
-            maxAudioChannels: 8
-        };
-
-        if (!this.deviceInfo.audioSupport.webAudio) {
-            settings.enableMusic = false;
-            settings.maxAudioChannels = 2;
-        }
-
-        switch (level) {
-            case 'very_low':
-                settings.enableMusic = false;
-                settings.audioQuality = 'low';
-                settings.maxAudioChannels = 2;
-                break;
-                
-            case 'low':
-                settings.audioQuality = 'low';
-                settings.maxAudioChannels = 4;
-                break;
-                
-            case 'medium':
-                settings.audioQuality = 'medium';
-                settings.maxAudioChannels = 6;
-                break;
-                
-            case 'high':
-                settings.audioQuality = 'high';
-                settings.maxAudioChannels = 12;
-                break;
-        }
-
-        return settings;
-    }
-
-    /**
-     * 获取网络设置
-     */
-    getNetworkSettings(level) {
-        const settings = {
-            enableRealtime: true,
-            updateFrequency: 1000,
-            enableCompression: true,
-            maxRetries: 3,
-            timeout: 5000
-        };
-
-        const connection = this.deviceInfo.connection;
-        if (connection) {
-            if (connection.saveData || connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
-                settings.enableRealtime = false;
-                settings.updateFrequency = 5000;
-                settings.enableCompression = true;
-                settings.maxRetries = 1;
-            } else if (connection.effectiveType === '3g') {
-                settings.updateFrequency = 2000;
-                settings.maxRetries = 2;
-            }
-        }
-
-        return settings;
-    }
-
-    /**
-     * 获取UI设置
-     */
-    getUISettings(level) {
-        const settings = {
-            enableTransitions: true,
-            animationDuration: 300,
-            enableBlur: true,
-            enableShadows: true,
-            responsiveUI: true
-        };
-
-        if (this.deviceInfo.isMobile) {
-            settings.enableBlur = false;
-            settings.animationDuration = 200;
-        }
-
-        switch (level) {
-            case 'very_low':
-                settings.enableTransitions = false;
-                settings.enableBlur = false;
-                settings.enableShadows = false;
-                break;
-                
-            case 'low':
-                settings.animationDuration = 150;
-                settings.enableBlur = false;
-                break;
-                
-            case 'medium':
-                settings.animationDuration = 250;
-                break;
-                
-            case 'high':
-                settings.animationDuration = 350;
-                settings.enableBlur = true;
-                break;
-        }
-
-        return settings;
-    }
-
-    /**
-     * 获取游戏设置
-     */
-    getGameSettings(level) {
-        const settings = {
-            enablePreview: true,
-            enableGhost: true,
-            enableHold: true,
-            enableStats: true,
-            updateRate: 60,
-            inputDelay: 0
-        };
-
-        switch (level) {
-            case 'very_low':
-                settings.enableStats = false;
-                settings.updateRate = 30;
-                settings.inputDelay = 50;
-                break;
-                
-            case 'low':
-                settings.updateRate = 45;
-                settings.inputDelay = 30;
-                break;
-                
-            case 'medium':
-                settings.updateRate = 60;
-                settings.inputDelay = 10;
-                break;
-                
-            case 'high':
-                settings.updateRate = 120;
-                settings.inputDelay = 0;
-                break;
-        }
-
-        return settings;
-    }
-
-    /**
-     * 获取设备信息
-     */
-    getDeviceInfo() {
-        return { ...this.deviceInfo };
-    }
-
-    /**
-     * 获取优化设置
-     */
-    getOptimizedSettings() {
-        return { ...this.optimizedSettings };
-    }
-
-    /**
-     * 获取性能报告
-     */
-    getPerformanceReport() {
-        return {
-            deviceInfo: this.getDeviceInfo(),
-            performanceTests: { ...this.performanceTests },
-            optimizedSettings: this.getOptimizedSettings(),
-            recommendations: this.getRecommendations()
-        };
-    }
-
-    /**
-     * 获取优化建议
-     */
-    getRecommendations() {
-        const recommendations = [];
-        
-        if (this.deviceInfo.performanceLevel === 'very_low') {
-            recommendations.push('建议关闭动画效果以提高性能');
-            recommendations.push('建议降低游戏更新频率');
-        }
-        
-        if (this.deviceInfo.isMobile) {
-            recommendations.push('建议使用触摸控制');
-            recommendations.push('建议启用省电模式');
-        }
-        
-        if (this.deviceInfo.connection?.saveData) {
-            recommendations.push('检测到数据节省模式，已优化网络使用');
-        }
-        
-        if (!this.deviceInfo.webGL) {
-            recommendations.push('设备不支持WebGL，使用Canvas 2D渲染');
-        }
-        
-        return recommendations;
-    }
-
-    /**
-     * 应用优化设置到游戏
-     */
-    applyOptimizations(gameInstance) {
-        if (!gameInstance) return;
-        
-        const settings = this.optimizedSettings;
-        
-        // 应用图形设置
-        if (gameInstance.renderer) {
-            gameInstance.renderer.setMaxAnimations(settings.graphics.maxAnimations);
-            gameInstance.renderer.setTargetFPS(settings.graphics.targetFPS);
-            gameInstance.renderer.enableAnimations(settings.graphics.enableAnimations);
-        }
-        
-        // 应用游戏设置
-        if (gameInstance.config) {
-            gameInstance.config.updateRate = settings.game.updateRate;
-            gameInstance.config.inputDelay = settings.game.inputDelay;
-        }
-        
-        console.log('优化设置已应用到游戏实例');
     }
 }
 
-// 导出设备检测器
+// 导出类
 window.DeviceDetector = DeviceDetector;
+
+console.log('设备性能检测器加载完成');

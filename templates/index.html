@@ -136,6 +136,15 @@
 <!-- Socket.IO -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
+<!-- 核心系统脚本 -->
+<script src="{{ url_for('static', filename='js/error-handler.js') }}"></script>
+<script src="{{ url_for('static', filename='js/error-recovery-system.js') }}"></script>
+<script src="{{ url_for('static', filename='js/device-detector.js') }}"></script>
+<script src="{{ url_for('static', filename='js/network-manager.js') }}"></script>
+<script src="{{ url_for('static', filename='js/offline-storage.js') }}"></script>
+<script src="{{ url_for('static', filename='js/resource-manager.js') }}"></script>
+<script src="{{ url_for('static', filename='js/performance-optimizer.js') }}"></script>
+
 <!-- 游戏脚本 -->
 <script src="{{ url_for('static', filename='js/api-client.js') }}"></script>
 <script src="{{ url_for('static', filename='js/websocket-client.js') }}"></script>
@@ -143,11 +152,16 @@
 <script src="{{ url_for('static', filename='js/board-manager.js') }}"></script>
 <script src="{{ url_for('static', filename='js/difficulty-manager.js') }}"></script>
 <script src="{{ url_for('static', filename='js/scoring-system.js') }}"></script>
+<script src="{{ url_for('static', filename='js/game-renderer.js') }}"></script>
 <script src="{{ url_for('static', filename='js/ui-manager.js') }}"></script>
 <script src="{{ url_for('static', filename='js/mobile-touch-handler.js') }}"></script>
 <script src="{{ url_for('static', filename='js/input-controller.js') }}"></script>
 <script src="{{ url_for('static', filename='js/tetris-game.js') }}"></script>
-<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<!-- 启动系统 -->
+<script src="{{ url_for('static', filename='js/module-loader.js') }}"></script>
+<script src="{{ url_for('static', filename='js/game-bootstrap.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main-new.js') }}"></script>
 
 <script>
 // 页面特定的JavaScript代码

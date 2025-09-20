@@ -289,8 +289,8 @@ class APIClient {
             throw new APIError('得分必须是非负数字', 400);
         }
         
-        if (typeof gameData.level !== 'number' || gameData.level < 1) {
-            throw new APIError('级别必须是正数字', 400);
+        if (typeof gameData.level !== 'number' || gameData.level < 1 || gameData.level > 100) {
+            throw new APIError('级别必须在1-100之间', 400);
         }
         
         if (typeof gameData.lines_cleared !== 'number' || gameData.lines_cleared < 0) {

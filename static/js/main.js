@@ -577,96 +577,126 @@ let performanceDashboard = null;
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('俄罗斯方块游戏初始化...');
+    console.log('俄罗斯方块游戏启动...');
     
-    // 初始化性能优化系统
-    await initializePerformanceOptimization();
-    
-    // 初始化错误处理和离线支持
-    initializeErrorHandlingAndOfflineSupport();
-    
-    // 初始化渲染器（使用优化设置）
-    gameRenderer = new GameRenderer('game-canvas', 'next-canvas');
-    
-    // 初始化UI管理器
-    uiManager = new UIManager();
-    
-    // 设置网络状态监控
-    setupNetworkStatusMonitoring();
-    
-    // 初始化WebSocket连接
-    uiManager.initializeWebSocket();
-    
-    // 设置重新开始游戏功能
-    uiManager.setupRestartGame();
-    
-    // 初始化用户
-    initializeUser();
-    
-    // 初始化游戏界面
-    initializeGameInterface();
-    
-    // 初始化游戏实例
-    initializeGameInstance();
-    
-    // 演示渲染效果
-    demonstrateRendering();
+    try {
+        // 使用新的启动管理器
+        const bootstrap = new GameBootstrap({
+            maxStartupTime: 15000,
+            enableFallbackMode: true
+        });
+        
+        // 监听启动事件
+        bootstrap.on('initializationComplete', (state) => {
+            console.log('游戏初始化完成:', state);
+            // 初始化游戏界面和用户系统
+            initializeGameInterface();
+            initializeUser();
+        });
+        
+        bootstrap.on('initializationError', (data) => {
+            console.error('游戏初始化失败:', data);
+        });
+        
+        bootstrap.on('fallbackModeEnabled', (state) => {
+            console.log('降级模式已启用:', state);
+            // 在降级模式下也要初始化基本功能
+            initializeGameInterface();
+            initializeUser();
+        });
+        
+        // 开始初始化
+        await bootstrap.initialize();
+        
+    } catch (error) {
+        console.error('启动管理器创建失败:', error);
+        // 回退到简单的初始化流程
+        await fallbackInitialization();
+    }
 });
 
-// 初始化性能优化系统
+// 简单的回退初始化流程
+async function fallbackInitialization() {
+    console.log('使用回退初始化流程...');
+    
+    try {
+        // 隐藏加载界面
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            loadingScreen.style.display = 'none';
+        }
+        
+        // 显示游戏界面
+        const gameContainer = document.getElementById('game-container');
+        if (gameContainer) {
+            gameContainer.style.display = 'block';
+        }
+        
+        // 初始化基本的渲染器
+        if (window.GameRenderer) {
+            gameRenderer = new GameRenderer('game-canvas', 'next-canvas');
+        }
+        
+        // 初始化UI管理器
+        if (window.UIManager) {
+            uiManager = new UIManager();
+        }
+        
+        // 初始化游戏界面和用户系统
+        initializeGameInterface();
+        initializeUser();
+        
+        console.log('回退初始化完成');
+        
+    } catch (error) {
+        console.error('回退初始化也失败了:', error);
+        showCriticalError(error);
+    }
+}
+
+// 显示严重错误
+function showCriticalError(error) {
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+        loadingScreen.innerHTML = `
+            <div class="critical-error">
+                <h2>游戏无法启动</h2>
+                <p>抱歉，游戏遇到了严重错误无法启动。</p>
+                <p class="error-details">${error.message}</p>
+                <button onclick="window.location.reload()" class="btn btn-primary">重新加载页面</button>
+            </div>
+        `;
+        loadingScreen.style.display = 'flex';
+        loadingScreen.style.opacity = '1';
+    }
+}
+
+// 初始化性能优化系统（简化版本）
 async function initializePerformanceOptimization() {
     console.log('初始化性能优化系统...');
     
     try {
-        // 初始化设备检测器
-        deviceDetector = new DeviceDetector();
-        await deviceDetector.initialize();
-        
-        // 获取优化设置
-        const optimizedSettings = deviceDetector.getOptimizedSettings();
-        
-        // 初始化性能优化器
-        performanceOptimizer = new PerformanceOptimizer({
-            targetFPS: optimizedSettings.graphics.targetFPS,
-            maxAnimations: optimizedSettings.graphics.maxAnimations,
-            enableVSync: optimizedSettings.graphics.enableVSync
-        });
-        
-        // 初始化资源管理器
-        resourceManager = new ResourceManager({
-            enableCompression: optimizedSettings.network.enableCompression
-        });
-        
-        // 监听资源加载进度
-        resourceManager.on('progressUpdate', (progress) => {
-            updateLoadingProgress(progress);
-        });
-        
-        resourceManager.on('preloadComplete', (state) => {
-            console.log('资源预加载完成:', state);
-            hideLoadingScreen();
-        });
-        
-        // 显示性能报告
-        const performanceReport = deviceDetector.getPerformanceReport();
-        console.log('设备性能报告:', performanceReport);
-        
-        // 应用优化设置到全局配置
-        applyOptimizationsToGlobalConfig(optimizedSettings);
-        
-        // 初始化性能监控面板（仅在开发环境）
-        if (window.PerformanceDashboard) {
-            performanceDashboard = new PerformanceDashboard({
-                showInProduction: false,
-                position: 'top-right'
-            });
+        // 尝试初始化设备检测器
+        if (window.DeviceDetector) {
+            deviceDetector = new DeviceDetector();
+            if (deviceDetector.initialize) {
+                await deviceDetector.initialize();
+            }
         }
         
+        // 尝试初始化性能优化器
+        if (window.PerformanceOptimizer) {
+            performanceOptimizer = new PerformanceOptimizer();
+        }
+        
+        // 尝试初始化资源管理器
+        if (window.ResourceManager) {
+            resourceManager = new ResourceManager();
+        }
+        
+        console.log('性能优化系统初始化完成');
     } catch (error) {
-        console.error('性能优化系统初始化失败:', error);
-        // 使用默认设置继续
-        performanceOptimizer = new PerformanceOptimizer();
-        resourceManager = new ResourceManager();
+        console.warn('性能优化系统初始化失败，使用默认设置:', error);
     }
 }
 
@@ -715,56 +745,30 @@ function hideLoadingScreen() {
     }
 }
 
-// 初始化错误处理和离线支持
+// 初始化错误处理和离线支持（简化版本）
 function initializeErrorHandlingAndOfflineSupport() {
     console.log('初始化错误处理和离线支持...');
     
-    // 设置错误处理器事件监听
-    window.errorHandler.on('online', (data) => {
-        console.log('网络已恢复:', data);
-        // 尝试同步离线数据
-        window.offlineStorage.syncOfflineData();
-        // 重新连接WebSocket
-        if (window.wsClient && !window.wsClient.isConnected) {
-            window.wsClient.connect();
+    try {
+        // 检查并初始化错误处理器
+        if (window.ErrorHandler) {
+            window.errorHandler = new ErrorHandler();
         }
-    });
-    
-    window.errorHandler.on('offline', (data) => {
-        console.log('网络已断开:', data);
-        // 启用离线模式
-        enableOfflineMode();
-    });
-    
-    // 设置网络管理器事件监听
-    window.networkManager.on('statusChanged', (data) => {
-        console.log('网络状态变化:', data);
-        updateNetworkStatusUI(data);
-    });
-    
-    window.networkManager.on('qualityChanged', (data) => {
-        console.log('连接质量变化:', data);
-        updateConnectionQualityUI(data);
-    });
-    
-    // 设置离线存储事件监听
-    window.offlineStorage.on('syncCompleted', (data) => {
-        console.log('离线数据同步完成:', data);
-        if (data.syncedCount > 0) {
-            window.errorHandler.showError({
-                type: 'success',
-                title: '数据同步完成',
-                message: `成功同步 ${data.syncedCount} 条游戏记录`,
-                duration: 3000
-            });
+        
+        // 检查并初始化网络管理器
+        if (window.NetworkManager) {
+            window.networkManager = new NetworkManager();
         }
-    });
-    
-    // 加载离线游戏设置
-    loadOfflineGameSettings();
-    
-    // 检查是否有未完成的游戏进度
-    checkForSavedGameProgress();
+        
+        // 检查并初始化离线存储
+        if (window.OfflineStorage) {
+            window.offlineStorage = new OfflineStorage();
+        }
+        
+        console.log('错误处理和离线支持初始化完成');
+    } catch (error) {
+        console.warn('错误处理和离线支持初始化失败:', error);
+    }
 }
 
 // 启用离线模式
@@ -1002,6 +1006,13 @@ async function initializeUser() {
         }
         
     } catch (error) {
+        console.error('用户初始化失败:', error);
+        // 创建临时离线用户作为后备
+        createOfflineUser();
+    }
+        }
+        
+    } catch (error) {
         console.error('初始化用户时出错:', error);
         window.errorHandler.handleGameError(error, { action: 'initialize_user' });
         
@@ -1062,11 +1073,33 @@ function updateUserInfo() {
 
 // 初始化游戏界面
 function initializeGameInterface() {
-    // 设置主题切换（如果需要）
-    setupThemeControls();
+    console.log('初始化游戏界面...');
     
-    // 设置基本的UI交互
-    setupBasicControls();
+    try {
+        // 设置主题切换（如果需要）
+        setupThemeControls();
+        
+        // 设置基本的UI交互
+        setupBasicControls();
+        
+        // 初始化UI管理器
+        if (window.UIManager && !uiManager) {
+            uiManager = new UIManager();
+            if (uiManager.initializeWebSocket) {
+                uiManager.initializeWebSocket();
+            }
+            if (uiManager.setupRestartGame) {
+                uiManager.setupRestartGame();
+            }
+        }
+        
+        // 初始化游戏实例
+        initializeGameInstance();
+        
+        console.log('游戏界面初始化完成');
+    } catch (error) {
+        console.error('游戏界面初始化失败:', error);
+    }
 }
 
 // 设置主题控制

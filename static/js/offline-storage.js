@@ -827,4 +827,3 @@ window.offlineStorage = new OfflineStorage({
 window.OfflineStorage = OfflineStorage;
 
 console.log('离线存储模块加载完成');
-</content>

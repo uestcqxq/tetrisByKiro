@@ -17,6 +17,11 @@ class User(BaseModel):
     # 关系
     game_records = db.relationship('GameRecord', backref='user', lazy=True, cascade='all, delete-orphan')
     
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.last_active:
+            self.last_active = datetime.now(timezone.utc)
+    
     def __repr__(self):
         return f'<User {self.username}>'
     

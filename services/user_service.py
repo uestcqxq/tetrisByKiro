@@ -92,12 +92,12 @@ class UserService(BaseService):
                 if username is None:
                     username = self.generate_unique_username()
                 else:
-                    # 清理和验证用户名
-                    username = self.sanitize_string(username, max_length=50)
-                    
-                    # 验证用户名格式
+                    # 先验证用户名格式
                     if not self._validate_username(username):
                         raise ValidationError(f"用户名格式无效: {username}", field='username', value=username)
+                    
+                    # 清理用户名
+                    username = self.sanitize_string(username, max_length=50)
                     
                     # 检查用户名是否已存在
                     existing_user = User.query.filter_by(username=username).first()

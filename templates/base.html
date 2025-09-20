@@ -13,12 +13,16 @@
         <div class="loading-content">
             <h2>俄罗斯方块</h2>
             <div class="loading-spinner"></div>
-            <div id="loading-text" class="loading-text">初始化游戏...</div>
+            <div id="loading-text" class="loading-text">正在启动游戏...</div>
             <div class="loading-bar">
                 <div id="loading-progress" class="loading-progress"></div>
             </div>
             <div class="loading-details">
-                <div id="loading-stage">检测设备性能...</div>
+                <div id="loading-stage">初始化中...</div>
+                <div id="loading-percentage" class="loading-percentage">0%</div>
+            </div>
+            <div class="loading-tips">
+                <div id="loading-tip" class="loading-tip">提示: 使用方向键控制方块移动</div>
             </div>
         </div>
     </div>
@@ -38,18 +42,7 @@
         </footer>
     </div>
     
-    <!-- 性能优化模块 -->
-    <script src="{{ url_for('static', filename='js/performance-optimizer.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/resource-manager.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/device-detector.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/performance-dashboard.js') }}"></script>
-    
-    <!-- 错误处理和离线支持 -->
-    <script src="{{ url_for('static', filename='js/error-handler.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/offline-storage.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/network-manager.js') }}"></script>
-    
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

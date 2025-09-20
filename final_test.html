@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最终游戏加载测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-panel {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        .status {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: rgba(40, 167, 69, 0.8); }
+        .error { background: rgba(220, 53, 69, 0.8); }
+        .warning { background: rgba(255, 193, 7, 0.8); color: #000; }
+        .info { background: rgba(23, 162, 184, 0.8); }
+        button {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+        }
+        #game-area {
+            display: none;
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        #game-canvas {
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 5px;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 俄罗斯方块 - 最终测试</h1>
+        
+        <div class="test-panel">
+            <h3>🔧 系统状态</h3>
+            <div id="system-status">
+                <div class="status info">正在检查系统状态...</div>
+            </div>
+            <button onclick="checkSystemStatus()">重新检查</button>
+            <button onclick="startGame()">启动游戏</button>
+        </div>
+        
+        <div class="test-panel">
+            <h3>📊 加载统计</h3>
+            <div id="loading-stats">
+                <div class="status info">等待加载统计...</div>
+            </div>
+        </div>
+        
+        <div id="game-area">
+            <h3>🎯 游戏区域</h3>
+            <canvas id="game-canvas" width="300" height="600"></canvas>
+            <canvas id="next-canvas" width="120" height="120"></canvas>
+            <div>
+                <button onclick="pauseGame()">暂停</button>
+                <button onclick="resetGame()">重置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载所有脚本 -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- 核心系统脚本 -->
+    <script src="/static/js/error-handler.js"></script>
+    <script src="/static/js/error-recovery-system.js"></script>
+    <script src="/static/js/device-detector.js"></script>
+    <script src="/static/js/network-manager.js"></script>
+    <script src="/static/js/offline-storage.js"></script>
+    <script src="/static/js/resource-manager.js"></script>
+    <script src="/static/js/performance-optimizer.js"></script>
+
+    <!-- 游戏脚本 -->
+    <script src="/static/js/api-client.js"></script>
+    <script src="/static/js/websocket-client.js"></script>
+    <script src="/static/js/tetromino-manager.js"></script>
+    <script src="/static/js/board-manager.js"></script>
+    <script src="/static/js/difficulty-manager.js"></script>
+    <script src="/static/js/scoring-system.js"></script>
+    <script src="/static/js/ui-manager.js"></script>
+    <script src="/static/js/mobile-touch-handler.js"></script>
+    <script src="/static/js/input-controller.js"></script>
+    <script src="/static/js/tetris-game.js"></script>
+
+    <!-- 启动系统 -->
+    <script src="/static/js/module-loader.js"></script>
+    <script src="/static/js/game-bootstrap.js"></script>
+    <script src="/static/js/main-new.js"></script>
+
+    <script>
+        let gameInitialized = false;
+        let loadingStats = {};
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('system-status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function updateLoadingStats(stats) {
+            const statsDiv = document.getElementById('loading-stats');
+            loadingStats = stats;
+            
+            let html = '';
+            if (stats.moduleLoader) {
+                const ml = stats.moduleLoader;
+                html += `<div class="status ${ml.success ? 'success' : 'error'}">
+                    ModuleLoader: ${ml.success ? '成功' : '失败'} - 
+                    加载: ${ml.loaded || 0}, 失败: ${ml.failed || 0}
+                </div>`;
+            }
+            
+            if (stats.totalTime) {
+                html += `<div class="status info">总耗时: ${stats.totalTime}ms</div>`;
+            }
+            
+            if (stats.errors && stats.errors.length > 0) {
+                html += `<div class="status error">错误: ${stats.errors.length} 个</div>`;
+            }
+            
+            statsDiv.innerHTML = html || '<div class="status info">暂无统计数据</div>';
+        }
+        
+        async function checkSystemStatus() {
+            updateStatus('正在检查系统状态...', 'info');
+            
+            const startTime = Date.now();
+            const stats = { errors: [] };
+            
+            try {
+                // 检查关键类是否存在
+                const requiredClasses = [
+                    'ErrorHandler', 'ModuleLoader', 'GameBootstrap'
+                ];
+                
+                const missingClasses = [];
+                requiredClasses.forEach(className => {
+                    if (typeof window[className] === 'undefined') {
+                        missingClasses.push(className);
+                    }
+                });
+                
+                if (missingClasses.length > 0) {
+                    throw new Error(`缺少关键类: ${missingClasses.join(', ')}`);
+                }
+                
+                // 测试ModuleLoader
+                const moduleLoader = new ModuleLoader({
+                    timeout: 5000,
+                    debugMode: true
+                });
+                
+                const result = await moduleLoader.loadAllModules();
+                stats.moduleLoader = {
+                    success: true,
+                    loaded: result.loaded.length,
+                    failed: result.failed.length,
+                    loadedModules: result.loaded,
+                    failedModules: result.failed
+                };
+                
+                if (result.failed.length > 0) {
+                    stats.errors.push(`模块加载失败: ${result.failed.join(', ')}`);
+                }
+                
+                stats.totalTime = Date.now() - startTime;
+                
+                if (result.failed.length === 0) {
+                    updateStatus('✅ 系统状态正常，所有模块加载成功！', 'success');
+                    gameInitialized = true;
+                } else {
+                    updateStatus(`⚠️ 系统部分正常，${result.failed.length} 个模块加载失败`, 'warning');
+                    gameInitialized = true; // 仍然可以尝试启动
+                }
+                
+            } catch (error) {
+                stats.moduleLoader = { success: false, error: error.message };
+                stats.errors.push(error.message);
+                stats.totalTime = Date.now() - startTime;
+                
+                updateStatus(`❌ 系统检查失败: ${error.message}`, 'error');
+                console.error('系统检查失败:', error);
+            }
+            
+            updateLoadingStats(stats);
+        }
+        
+        async function startGame() {
+            if (!gameInitialized) {
+                updateStatus('请先检查系统状态', 'warning');
+                return;
+            }
+            
+            try {
+                updateStatus('正在启动游戏...', 'info');
+                
+                // 显示加载覆盖层
+                showLoadingOverlay();
+                
+                // 尝试初始化游戏
+                if (typeof initializeApp === 'function') {
+                    await initializeApp();
+                    
+                    // 隐藏加载覆盖层
+                    hideLoadingOverlay();
+                    
+                    // 显示游戏区域
+                    document.getElementById('game-area').style.display = 'block';
+                    
+                    updateStatus('🎮 游戏启动成功！', 'success');
+                    
+                } else {
+                    throw new Error('initializeApp函数未定义');
+                }
+                
+            } catch (error) {
+                hideLoadingOverlay();
+                updateStatus(`❌ 游戏启动失败: ${error.message}`, 'error');
+                console.error('游戏启动失败:', error);
+            }
+        }
+        
+        function showLoadingOverlay() {
+            const overlay = document.createElement('div');
+            overlay.id = 'loading-overlay';
+            overlay.className = 'loading-overlay';
+            overlay.innerHTML = `
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <h3>正在启动游戏...</h3>
+                    <p>请稍候，正在加载游戏组件</p>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+        
+        function pauseGame() {
+            if (window.gameApp && window.gameApp.game) {
+                if (window.gameApp.isPaused) {
+                    window.gameApp.game.resume();
+                    window.gameApp.isPaused = false;
+                } else {
+                    window.gameApp.game.pause();
+                    window.gameApp.isPaused = true;
+                }
+            }
+        }
+        
+        function resetGame() {
+            if (window.gameApp && window.gameApp.game) {
+                window.gameApp.game.reset();
+                window.gameApp.isGameRunning = false;
+                window.gameApp.isPaused = false;
+            }
+        }
+        
+        // 页面加载完成后自动检查系统状态
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('最终测试页面加载完成');
+            
+            // 延迟检查确保所有脚本都加载完成
+            setTimeout(() => {
+                checkSystemStatus();
+            }, 1000);
+        });
+        
+        // 监听错误
+        window.addEventListener('error', (event) => {
+            console.error('页面错误:', event.error);
+            updateStatus(`❌ 页面错误: ${event.error.message}`, 'error');
+        });
+        
+        // 监听未处理的Promise拒绝
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('未处理的Promise拒绝:', event.reason);
+            updateStatus(`❌ Promise错误: ${event.reason}`, 'error');
+        });
+    </script>
+</body>
+</html>

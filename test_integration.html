@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设备检测器集成测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .result { background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; }
+        .success { background: #d4edda; }
+        .error { background: #f8d7da; }
+        .warning { background: #fff3cd; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+        .stat { background: #e9ecef; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>设备检测器集成测试</h1>
+        
+        <div class="test-section">
+            <h2>测试控制</h2>
+            <button onclick="testBootstrapIntegration()">测试Bootstrap集成</button>
+            <button onclick="testDeviceDetectorStandalone()">测试独立设备检测器</button>
+            <button onclick="testConfigurationApplication()">测试配置应用</button>
+            <button onclick="clearResults()">清除结果</button>
+        </div>
+
+        <div class="test-section">
+            <h2>测试结果</h2>
+            <div id="test-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>设备信息</h2>
+            <div id="device-info" class="stats"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>性能配置</h2>
+            <div id="performance-config" class="result"></div>
+        </div>
+    </div>
+
+    <!-- 加载必要的脚本 -->
+    <script src="static/js/device-detector.js"></script>
+    <script src="static/js/game-bootstrap.js"></script>
+
+    <script>
+        let testResults = [];
+
+        function addTestResult(test, status, message, data = null) {
+            const result = {
+                test,
+                status,
+                message,
+                data,
+                timestamp: new Date().toISOString()
+            };
+            testResults.push(result);
+            displayTestResults();
+        }
+
+        function displayTestResults() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = testResults.map(result => `
+                <div class="result ${result.status}">
+                    <strong>[${result.test}]</strong> ${result.message}
+                    ${result.data ? `<br><small>数据: ${JSON.stringify(result.data, null, 2)}</small>` : ''}
+                </div>
+            `).join('');
+        }
+
+        async function testBootstrapIntegration() {
+            addTestResult('Bootstrap集成', 'info', '开始测试GameBootstrap与DeviceDetector的集成...');
+
+            try {
+                // 创建GameBootstrap实例
+                const bootstrap = new GameBootstrap({
+                    maxStartupTime: 10000,
+                    enableFallbackMode: true
+                });
+
+                // 监听设备检测完成事件
+                let deviceDetectionCompleted = false;
+                bootstrap.on('moduleLoadSuccess', (data) => {
+                    if (data.module === 'deviceDetector') {
+                        deviceDetectionCompleted = true;
+                        addTestResult('Bootstrap集成', 'success', '设备检测器模块加载成功');
+                        
+                        // 检查全局变量是否设置
+                        if (window.deviceDetector) {
+                            addTestResult('Bootstrap集成', 'success', '设备检测器全局变量已设置');
+                            displayDeviceInfo();
+                        } else {
+                            addTestResult('Bootstrap集成', 'error', '设备检测器全局变量未设置');
+                        }
+                    }
+                });
+
+                bootstrap.on('initializationComplete', (state) => {
+                    addTestResult('Bootstrap集成', 'success', 'Bootstrap初始化完成', {
+                        loadedModules: Array.from(state.loadedModules),
+                        failedModules: Array.from(state.failedModules)
+                    });
+                });
+
+                bootstrap.on('initializationError', (data) => {
+                    addTestResult('Bootstrap集成', 'error', `Bootstrap初始化失败: ${data.error.message}`);
+                });
+
+                // 开始初始化
+                await bootstrap.initialize();
+
+                if (!deviceDetectionCompleted) {
+                    addTestResult('Bootstrap集成', 'warning', '设备检测器模块未在预期时间内完成');
+                }
+
+            } catch (error) {
+                addTestResult('Bootstrap集成', 'error', `测试失败: ${error.message}`);
+            }
+        }
+
+        async function testDeviceDetectorStandalone() {
+            addTestResult('独立检测器', 'info', '开始测试独立的DeviceDetector...');
+
+            try {
+                const detector = new DeviceDetector();
+                const result = await detector.initialize();
+
+                addTestResult('独立检测器', 'success', '设备检测完成', {
+                    performanceLevel: result.performanceLevel,
+                    detectionTime: Math.round(result.results.detectionTime),
+                    confidence: Math.round(result.results.confidence * 100)
+                });
+
+                displayDeviceInfo(result.deviceInfo);
+                displayPerformanceConfig(result.config);
+
+            } catch (error) {
+                addTestResult('独立检测器', 'error', `测试失败: ${error.message}`);
+            }
+        }
+
+        async function testConfigurationApplication() {
+            addTestResult('配置应用', 'info', '开始测试配置应用...');
+
+            try {
+                // 创建设备检测器
+                const detector = new DeviceDetector();
+                const result = await detector.initialize();
+
+                // 模拟游戏配置对象
+                window.GAME_CONFIG = {
+                    ENABLE_ANIMATIONS: true,
+                    MAX_ANIMATIONS: 10,
+                    TARGET_FPS: 60,
+                    RENDER_QUALITY: 'high'
+                };
+
+                window.COLOR_THEMES = {
+                    classic: { useSimpleColors: false },
+                    neon: { useSimpleColors: false }
+                };
+
+                // 应用配置
+                const applied = detector.applyConfigurationToGame(result.config);
+
+                if (applied) {
+                    addTestResult('配置应用', 'success', '配置应用成功', {
+                        appliedConfig: {
+                            ENABLE_ANIMATIONS: window.GAME_CONFIG.ENABLE_ANIMATIONS,
+                            MAX_ANIMATIONS: window.GAME_CONFIG.MAX_ANIMATIONS,
+                            TARGET_FPS: window.GAME_CONFIG.TARGET_FPS,
+                            RENDER_QUALITY: window.GAME_CONFIG.RENDER_QUALITY
+                        }
+                    });
+                } else {
+                    addTestResult('配置应用', 'error', '配置应用失败');
+                }
+
+            } catch (error) {
+                addTestResult('配置应用', 'error', `测试失败: ${error.message}`);
+            }
+        }
+
+        function displayDeviceInfo(deviceInfo = null) {
+            const infoDiv = document.getElementById('device-info');
+            
+            if (!deviceInfo && window.deviceDetector) {
+                const summary = window.deviceDetector.getDeviceSummary();
+                deviceInfo = window.deviceDetector.deviceInfo;
+                
+                infoDiv.innerHTML = `
+                    <div class="stat"><strong>设备类型:</strong> ${summary.type}</div>
+                    <div class="stat"><strong>性能等级:</strong> ${summary.performance}</div>
+                    <div class="stat"><strong>屏幕尺寸:</strong> ${summary.screen}</div>
+                    <div class="stat"><strong>内存等级:</strong> ${summary.memory}</div>
+                    <div class="stat"><strong>触摸支持:</strong> ${summary.touch ? '是' : '否'}</div>
+                    <div class="stat"><strong>置信度:</strong> ${summary.confidence}</div>
+                `;
+            } else if (deviceInfo) {
+                infoDiv.innerHTML = `
+                    <div class="stat"><strong>移动设备:</strong> ${deviceInfo.isMobile ? '是' : '否'}</div>
+                    <div class="stat"><strong>平板设备:</strong> ${deviceInfo.isTablet ? '是' : '否'}</div>
+                    <div class="stat"><strong>桌面设备:</strong> ${deviceInfo.isDesktop ? '是' : '否'}</div>
+                    <div class="stat"><strong>屏幕尺寸:</strong> ${deviceInfo.screenSize}</div>
+                    <div class="stat"><strong>内存等级:</strong> ${deviceInfo.memoryLevel}</div>
+                    <div class="stat"><strong>CPU等级:</strong> ${deviceInfo.cpuLevel}</div>
+                    <div class="stat"><strong>GPU等级:</strong> ${deviceInfo.gpuLevel}</div>
+                    <div class="stat"><strong>触摸支持:</strong> ${deviceInfo.hasTouch ? '是' : '否'}</div>
+                `;
+            }
+        }
+
+        function displayPerformanceConfig(config = null) {
+            const configDiv = document.getElementById('performance-config');
+            
+            if (config) {
+                configDiv.textContent = JSON.stringify(config, null, 2);
+            } else if (window.deviceDetector) {
+                // 尝试获取当前配置
+                configDiv.textContent = '配置信息不可用';
+            }
+        }
+
+        function clearResults() {
+            testResults = [];
+            displayTestResults();
+            document.getElementById('device-info').innerHTML = '';
+            document.getElementById('performance-config').textContent = '';
+        }
+
+        // 页面加载时显示基础信息
+        window.addEventListener('load', () => {
+            addTestResult('系统', 'info', '测试页面已加载');
+            
+            // 检查必要的类是否可用
+            if (typeof DeviceDetector !== 'undefined') {
+                addTestResult('系统', 'success', 'DeviceDetector类可用');
+            } else {
+                addTestResult('系统', 'error', 'DeviceDetector类不可用');
+            }
+            
+            if (typeof GameBootstrap !== 'undefined') {
+                addTestResult('系统', 'success', 'GameBootstrap类可用');
+            } else {
+                addTestResult('系统', 'error', 'GameBootstrap类不可用');
+            }
+        });
+
+        console.log('设备检测器集成测试页面已加载');
+    </script>
+</body>
+</html>
